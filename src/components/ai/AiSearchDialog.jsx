@@ -94,10 +94,10 @@ const AiSearchDialog = ({ open, onClose }) => {
       maxWidth="md"
       PaperProps={{
         sx: {
-          background: "#111827",
-          color: "#fff",
+          background: "var(--surface-2)",
+          color: "var(--text)",
           borderRadius: 3,
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: "1px solid rgba(var(--ov),0.08)",
         },
       }}
     >
@@ -115,7 +115,7 @@ const AiSearchDialog = ({ open, onClose }) => {
           <Typography sx={{ fontWeight: 600, flex: 1 }}>
             Semantic search
           </Typography>
-          <IconButton size="small" onClick={onClose} sx={{ color: "#fff" }}>
+          <IconButton size="small" onClick={onClose} sx={{ color: "var(--text)" }}>
             <CloseRoundedIcon />
           </IconButton>
         </Box>
@@ -127,19 +127,19 @@ const AiSearchDialog = ({ open, onClose }) => {
             gap: 1,
             p: 1.25,
             borderRadius: 2,
-            backgroundColor: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            backgroundColor: "rgba(var(--ov),0.04)",
+            border: "1px solid rgba(var(--ov),0.08)",
             boxShadow: "none",
           }}
         >
-          <SearchOutlinedIcon sx={{ color: "rgba(255,255,255,0.6)", ml: 1 }} />
+          <SearchOutlinedIcon sx={{ color: "rgba(var(--ov),0.6)", ml: 1 }} />
           <InputBase
             autoFocus
             fullWidth
             placeholder="Search by meaning... e.g. 'how to set up Docker network'"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            sx={{ color: "#fff", fontSize: 16 }}
+            sx={{ color: "var(--text)", fontSize: 16 }}
           />
           {loading && <CircularProgress size={18} sx={{ color: "#a5b4fc", mr: 1 }} />}
         </Paper>
@@ -153,7 +153,7 @@ const AiSearchDialog = ({ open, onClose }) => {
         <Box sx={{ mt: 2, maxHeight: "55vh", overflowY: "auto" }}>
           {hasSearched && !loading && hits.length === 0 && !error && (
             <Typography
-              sx={{ color: "rgba(255,255,255,0.5)", fontStyle: "italic", py: 4, textAlign: "center" }}
+              sx={{ color: "rgba(var(--ov),0.5)", fontStyle: "italic", py: 4, textAlign: "center" }}
             >
               No matches yet. Try a different query.
             </Typography>
@@ -167,12 +167,12 @@ const AiSearchDialog = ({ open, onClose }) => {
                 sx={{
                   p: 2,
                   borderRadius: 2,
-                  backgroundColor: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  backgroundColor: "rgba(var(--ov),0.03)",
+                  border: "1px solid rgba(var(--ov),0.08)",
                   boxShadow: "none",
                   cursor: "pointer",
                   "&:hover": {
-                    backgroundColor: "rgba(255,255,255,0.06)",
+                    backgroundColor: "rgba(var(--ov),0.06)",
                     borderColor: "rgba(99,102,241,0.45)",
                   },
                 }}
@@ -191,7 +191,7 @@ const AiSearchDialog = ({ open, onClose }) => {
                     size="small"
                     label={`${Math.round((hit.score || 0) * 100)}%`}
                     sx={{
-                      color: "#fff",
+                      color: "var(--text)",
                       backgroundColor: "rgba(99,102,241,0.25)",
                     }}
                   />
@@ -199,7 +199,7 @@ const AiSearchDialog = ({ open, onClose }) => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "rgba(255,255,255,0.7)",
+                    color: "rgba(var(--ov),0.7)",
                     display: "-webkit-box",
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: "vertical",

@@ -130,7 +130,7 @@ const AiInsightsPanel = ({ note }) => {
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", mt: 4 }}>
-      <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mb: 2 }} />
+      <Divider sx={{ borderColor: "rgba(var(--ov),0.08)", mb: 2 }} />
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
         <LocalOfferRoundedIcon sx={{ color: "#a5b4fc" }} />
@@ -154,13 +154,13 @@ const AiInsightsPanel = ({ note }) => {
           sx={{
             borderRadius: "999px",
             textTransform: "none",
-            color: "#fff",
+            color: "var(--text)",
             backgroundColor: "rgba(99,102,241,0.35)",
             px: 2,
             "&:hover": { backgroundColor: "rgba(99,102,241,0.55)" },
             "&.Mui-disabled": {
-              color: "rgba(255,255,255,0.4)",
-              backgroundColor: "rgba(255,255,255,0.05)",
+              color: "rgba(var(--ov),0.4)",
+              backgroundColor: "rgba(var(--ov),0.05)",
             },
           }}
         >
@@ -172,9 +172,9 @@ const AiInsightsPanel = ({ note }) => {
         sx={{
           p: 2.5,
           borderRadius: 2,
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          color: "rgba(255,255,255,0.85)",
+          background: "rgba(var(--ov),0.03)",
+          border: "1px solid rgba(var(--ov),0.08)",
+          color: "rgba(var(--ov),0.85)",
           boxShadow: "none",
         }}
       >
@@ -192,21 +192,21 @@ const AiInsightsPanel = ({ note }) => {
                     onDelete={() => handleRemoveTag(tag)}
                     sx={{
                       cursor: "pointer",
-                      color: "#fff",
+                      color: "var(--text)",
                       backgroundColor: selected
                         ? "rgba(99,102,241,0.32)"
-                        : "rgba(255,255,255,0.04)",
+                        : "rgba(var(--ov),0.04)",
                       border: selected
                         ? "1px solid rgba(99,102,241,0.55)"
-                        : "1px solid rgba(255,255,255,0.12)",
+                        : "1px solid rgba(var(--ov),0.12)",
                       transition: "all 0.15s ease",
                       "&:hover": {
                         backgroundColor: selected
                           ? "rgba(99,102,241,0.45)"
-                          : "rgba(255,255,255,0.08)",
+                          : "rgba(var(--ov),0.08)",
                       },
                       "& .MuiChip-deleteIcon": {
-                        color: "rgba(255,255,255,0.55)",
+                        color: "rgba(var(--ov),0.55)",
                         "&:hover": { color: "#ff8a80" },
                       },
                     }}
@@ -218,7 +218,7 @@ const AiInsightsPanel = ({ note }) => {
               sx={{
                 mt: 1.5,
                 fontSize: "0.75rem",
-                color: "rgba(255,255,255,0.45)",
+                color: "rgba(var(--ov),0.45)",
               }}
             >
               Click a tag to toggle whether it's saved on the note. Click × to discard the suggestion.
@@ -228,7 +228,7 @@ const AiInsightsPanel = ({ note }) => {
           <Typography
             sx={{
               fontSize: "0.9rem",
-              color: "rgba(255,255,255,0.5)",
+              color: "rgba(var(--ov),0.5)",
               fontStyle: "italic",
             }}
           >
@@ -264,9 +264,9 @@ const AiInsightsPanel = ({ note }) => {
         sx={{
           p: 2,
           borderRadius: 2,
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          color: "rgba(255,255,255,0.85)",
+          background: "rgba(var(--ov),0.03)",
+          border: "1px solid rgba(var(--ov),0.08)",
+          color: "rgba(var(--ov),0.85)",
           boxShadow: "none",
         }}
       >
@@ -280,7 +280,7 @@ const AiInsightsPanel = ({ note }) => {
           <Typography
             sx={{
               fontSize: "0.9rem",
-              color: "rgba(255,255,255,0.5)",
+              color: "rgba(var(--ov),0.5)",
               fontStyle: "italic",
             }}
           >
@@ -300,11 +300,11 @@ const AiInsightsPanel = ({ note }) => {
                   p: 1.5,
                   borderRadius: 1.5,
                   cursor: "pointer",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "rgba(var(--ov),0.02)",
+                  border: "1px solid rgba(var(--ov),0.06)",
                   boxShadow: "none",
                   "&:hover": {
-                    background: "rgba(255,255,255,0.06)",
+                    background: "rgba(var(--ov),0.06)",
                     borderColor: "rgba(99,102,241,0.45)",
                   },
                 }}
@@ -323,7 +323,7 @@ const AiInsightsPanel = ({ note }) => {
                     size="small"
                     label={`${Math.round((hit.score || 0) * 100)}%`}
                     sx={{
-                      color: "#fff",
+                      color: "var(--text)",
                       backgroundColor: "rgba(99,102,241,0.25)",
                     }}
                   />
@@ -331,7 +331,7 @@ const AiInsightsPanel = ({ note }) => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "rgba(255,255,255,0.65)",
+                    color: "rgba(var(--ov),0.65)",
                     fontSize: "0.85rem",
                     display: "-webkit-box",
                     WebkitLineClamp: 2,

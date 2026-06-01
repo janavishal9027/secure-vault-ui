@@ -1,5 +1,34 @@
+:root {
+  /* ===== Dark theme (default) — values match the original hardcoded palette ===== */
+  --bg: #0b1020;
+  --surface: #1f2937;
+  --surface-2: #111827;
+  --text: #f5f7fb;
+  --text-2: #cfd5e3;
+  --text-muted: #98a2b3;
+  /* RGB channel used by every rgba(var(--ov), x) overlay (borders, dividers,
+     hover states, muted text). White on dark; dark slate on light. */
+  --ov: 255, 255, 255;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  /* ===== Light theme ===== */
+  --bg: #eef1f8;
+  --surface: #ffffff;
+  --surface-2: #f6f8fc;
+  --text: #0b1020;
+  --text-2: #2a3342;
+  --text-muted: #5b6472;
+  --ov: 17, 24, 39;
+  color-scheme: light;
+}
+
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.2s ease, color 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;

@@ -37,7 +37,8 @@ const SessionExpiredHandler = () => {
           background: "#1f2937", // match your app card background
           color: "#fff",
           borderRadius: 3,
-          minWidth: 420,
+          minWidth: { xs: "auto", sm: 420 },
+          width: { xs: "calc(100vw - 64px)", sm: "auto" },
           boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
         },
       }}

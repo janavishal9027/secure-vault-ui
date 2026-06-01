@@ -73,8 +73,12 @@ const SignUp = () => {
       const response = await registerService(payload);
 
       if (response.status === 200 || response.status === 201) {
-        alert("Account created successfully!");
-        navigate("/login");
+        // Redirect straight to login; pass a flag so the login page can show
+        // a "created successfully" message if it wants to.
+        navigate("/login", {
+          replace: true,
+          state: { registered: true },
+        });
       }
     } catch (error) {
       if (error.response) {
@@ -97,7 +101,7 @@ const SignUp = () => {
       }}
     >
       <Paper
-        elevation={30}
+        elevation={24}
         sx={{
           width: "100%",
           maxWidth: 520,

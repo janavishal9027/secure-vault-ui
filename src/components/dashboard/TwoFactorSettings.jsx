@@ -145,7 +145,7 @@ export default function TwoFactorSettings() {
       sx={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top left, rgba(91, 100, 255, 0.12), transparent 22%), #0b1020",
+          "radial-gradient(circle at top left, rgba(91, 100, 255, 0.12), transparent 22%), var(--bg)",
         py: 6,
       }}
     >
@@ -153,7 +153,7 @@ export default function TwoFactorSettings() {
         <Button
           startIcon={<ArrowBackRoundedIcon />}
           onClick={() => navigate("/dashboard")}
-          sx={{ color: "#cdd6f4", textTransform: "none", mb: 2 }}
+          sx={{ color: "var(--text-2)", textTransform: "none", mb: 2 }}
         >
           Back to dashboard
         </Button>
@@ -163,7 +163,7 @@ export default function TwoFactorSettings() {
           sx={{
             borderRadius: 4,
             p: 4,
-            background: "rgba(255,255,255,0.96)",
+            background: "rgba(var(--ov),0.96)",
           }}
         >
           <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
@@ -241,7 +241,7 @@ export default function TwoFactorSettings() {
                       justifyContent: "center",
                       mb: 2,
                       p: 2,
-                      backgroundColor: "#fff",
+                      backgroundColor: "var(--text)",
                       borderRadius: 2,
                     }}
                   >

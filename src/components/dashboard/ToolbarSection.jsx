@@ -65,8 +65,8 @@ export default function ToolbarSection({
           px: 1.8,
           py: 0.8,
           borderRadius: "999px",
-          border: "1px solid rgba(255,255,255,0.10)",
-          backgroundColor: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(var(--ov),0.10)",
+          backgroundColor: "rgba(var(--ov),0.03)",
           width: { xs: "100%", sm: "100%", md: 360, lg: 420 },
           flexShrink: { xs: 1, md: 0 },
           flexGrow: { xs: 1, md: 0 },
@@ -74,13 +74,13 @@ export default function ToolbarSection({
           order: { xs: 1, md: 0 },
         }}
       >
-        <SearchRoundedIcon sx={{ color: "#98a2b3", mr: 1 }} />
+        <SearchRoundedIcon sx={{ color: "var(--text-muted)", mr: 1 }} />
         <InputBase
           placeholder="Search notebooks"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           inputProps={{ "aria-label": "Search notebooks" }}
-          sx={{ color: "#f5f7fb", width: "100%" }}
+          sx={{ color: "var(--text)", width: "100%" }}
         />
       </Box>
 
@@ -100,8 +100,8 @@ export default function ToolbarSection({
           sx={{
             p: 0.5,
             borderRadius: "999px",
-            border: "1px solid rgba(255,255,255,0.10)",
-            backgroundColor: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(var(--ov),0.10)",
+            backgroundColor: "rgba(var(--ov),0.03)",
           }}
         >
           <IconButton
@@ -109,7 +109,7 @@ export default function ToolbarSection({
             onClick={() => setViewMode("grid")}
             aria-label="Grid view"
             sx={{
-              color: viewMode === "grid" ? "#ffffff" : "#98a2b3",
+              color: viewMode === "grid" ? "var(--text)" : "var(--text-muted)",
               backgroundColor:
                 viewMode === "grid"
                   ? "rgba(100, 108, 255, 0.18)"
@@ -118,7 +118,7 @@ export default function ToolbarSection({
                 backgroundColor:
                   viewMode === "grid"
                     ? "rgba(100, 108, 255, 0.26)"
-                    : "rgba(255,255,255,0.06)",
+                    : "rgba(var(--ov),0.06)",
               },
             }}
           >
@@ -129,7 +129,7 @@ export default function ToolbarSection({
             onClick={() => setViewMode("list")}
             aria-label="List view"
             sx={{
-              color: viewMode === "list" ? "#ffffff" : "#98a2b3",
+              color: viewMode === "list" ? "var(--text)" : "var(--text-muted)",
               backgroundColor:
                 viewMode === "list"
                   ? "rgba(100, 108, 255, 0.18)"
@@ -138,7 +138,7 @@ export default function ToolbarSection({
                 backgroundColor:
                   viewMode === "list"
                     ? "rgba(100, 108, 255, 0.26)"
-                    : "rgba(255,255,255,0.06)",
+                    : "rgba(var(--ov),0.06)",
               },
             }}
           >
@@ -155,17 +155,17 @@ export default function ToolbarSection({
           }
           variant="outlined"
           sx={{
-            color: "#e9edf7",
-            borderColor: "rgba(255,255,255,0.10)",
+            color: "var(--text)",
+            borderColor: "rgba(var(--ov),0.10)",
             borderRadius: "999px",
             px: { xs: 1.5, sm: 2 },
             minWidth: 0,
             textTransform: "none",
             whiteSpace: "nowrap",
-            backgroundColor: "rgba(255,255,255,0.03)",
+            backgroundColor: "rgba(var(--ov),0.03)",
             "&:hover": {
-              borderColor: "rgba(255,255,255,0.22)",
-              backgroundColor: "rgba(255,255,255,0.06)",
+              borderColor: "rgba(var(--ov),0.22)",
+              backgroundColor: "rgba(var(--ov),0.06)",
             },
           }}
         >
@@ -187,9 +187,9 @@ export default function ToolbarSection({
             paper: {
               sx: {
                 mt: 0.5,
-                background: "#1f2937",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.10)",
+                background: "var(--surface)",
+                color: "var(--text)",
+                border: "1px solid rgba(var(--ov),0.10)",
                 borderRadius: 2,
                 minWidth: 180,
               },
@@ -210,7 +210,7 @@ export default function ToolbarSection({
                   backgroundColor: "rgba(100, 108, 255, 0.30)",
                 },
                 "&:hover": {
-                  backgroundColor: "rgba(255,255,255,0.06)",
+                  backgroundColor: "rgba(var(--ov),0.06)",
                 },
               }}
             >
@@ -229,8 +229,8 @@ export default function ToolbarSection({
             minWidth: 0,
             textTransform: "none",
             whiteSpace: "nowrap",
-            color: "#0b1020",
-            backgroundColor: "#ffffff",
+            color: "var(--bg)",
+            backgroundColor: "var(--text)",
             boxShadow: "none",
             "& .MuiButton-startIcon": {
               mr: { xs: 0, sm: 1 },

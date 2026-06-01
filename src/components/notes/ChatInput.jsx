@@ -25,8 +25,8 @@ export default function ChatInput() {
         px: 1.5,
         py: 1,
         borderRadius: "30px",
-        background: "#1f2937",
-        border: "1px solid rgba(255,255,255,0.10)",
+        background: "var(--surface)",
+        border: "1px solid rgba(var(--ov),0.10)",
         display: "flex",
         alignItems: "center",
         gap: 1,
@@ -47,10 +47,10 @@ export default function ChatInput() {
         InputProps={{
           disableUnderline: true,
           sx: {
-            color: "#fff",
+            color: "var(--text)",
             px: 1,
             "& input": {
-              color: "#fff",
+              color: "var(--text)",
               height: "24px",
               whiteSpace: "nowrap",
               overflowX: "auto",
@@ -67,7 +67,7 @@ export default function ChatInput() {
       <IconButton
         onClick={handleSend}
         sx={{
-          color: "#fff",
+          color: "#ffffff",
           backgroundColor: "#2563eb",
           width: 38,
           height: 38,

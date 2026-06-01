@@ -7,20 +7,20 @@ import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 const summaryChipSx = (status) => {
   if (status === "READY") {
     return {
-      color: "#fff",
+      color: "var(--text)",
       backgroundColor: "rgba(34,197,94,0.22)",
       "& .MuiChip-icon": { color: "#86efac" },
     };
   }
   if (status === "PENDING") {
     return {
-      color: "#fff",
+      color: "var(--text)",
       backgroundColor: "rgba(99,102,241,0.22)",
       "& .MuiChip-icon": { color: "#a5b4fc" },
     };
   }
   return {
-    color: "#fff",
+    color: "var(--text)",
     backgroundColor: "rgba(239,68,68,0.22)",
     "& .MuiChip-icon": { color: "#fca5a5" },
   };
@@ -120,8 +120,8 @@ export default function NotebookCard({ viewMode, notes, loading }) {
     height: 180,
     borderRadius: 4,
     p: 2,
-    backgroundColor: "rgba(255,255,255,0.02)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(var(--ov),0.02)",
+    border: "1px solid rgba(var(--ov),0.08)",
     boxShadow: "none",
     backgroundImage: "none",
     boxSizing: "border-box",
@@ -130,7 +130,7 @@ export default function NotebookCard({ viewMode, notes, loading }) {
   };
 
   const noteDateSx = {
-    color: "#7b8595",
+    color: "var(--text-muted)",
     fontSize: 12,
     letterSpacing: 0.2,
     whiteSpace: "nowrap",
@@ -145,7 +145,7 @@ export default function NotebookCard({ viewMode, notes, loading }) {
     transition: "all 0.25s ease",
     "&:hover": {
       borderColor: "rgba(122, 134, 255, 0.35)",
-      backgroundColor: "rgba(255,255,255,0.04)",
+      backgroundColor: "rgba(var(--ov),0.04)",
       transform: "translateY(-3px)",
     },
   };
@@ -154,15 +154,15 @@ export default function NotebookCard({ viewMode, notes, loading }) {
     p: 2,
     mb: 2,
     borderRadius: 3,
-    backgroundColor: "rgba(255,255,255,0.02)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(var(--ov),0.02)",
+    border: "1px solid rgba(var(--ov),0.08)",
     boxShadow: "none",
     backgroundImage: "none",
     cursor: "pointer",
   };
 
   const titleStyle = {
-    color: "#f5f7fb",
+    color: "var(--text)",
     fontSize: 18,
     fontWeight: 500,
   };
@@ -182,11 +182,11 @@ export default function NotebookCard({ viewMode, notes, loading }) {
     pt: 1.5,
     "&::-webkit-scrollbar": { width: 8 },
     "&::-webkit-scrollbar-thumb": {
-      backgroundColor: "rgba(255,255,255,0.10)",
+      backgroundColor: "rgba(var(--ov),0.10)",
       borderRadius: 8,
     },
     "&::-webkit-scrollbar-thumb:hover": {
-      backgroundColor: "rgba(255,255,255,0.18)",
+      backgroundColor: "rgba(var(--ov),0.18)",
     },
   };
 
@@ -197,14 +197,14 @@ export default function NotebookCard({ viewMode, notes, loading }) {
     pb: 0.5,
     display: "flex",
     justifyContent: "center",
-    borderTop: "1px solid rgba(255,255,255,0.06)",
+    borderTop: "1px solid rgba(var(--ov),0.06)",
     "& .MuiPaginationItem-root": {
-      color: "#cfd5e3",
-      borderColor: "rgba(255,255,255,0.12)",
+      color: "var(--text-2)",
+      borderColor: "rgba(var(--ov),0.12)",
     },
     "& .MuiPaginationItem-root.Mui-selected": {
       backgroundColor: "rgba(100, 108, 255, 0.22)",
-      color: "#ffffff",
+      color: "var(--text)",
       borderColor: "rgba(122, 134, 255, 0.45)",
       "&:hover": {
         backgroundColor: "rgba(100, 108, 255, 0.30)",
@@ -213,11 +213,11 @@ export default function NotebookCard({ viewMode, notes, loading }) {
   };
 
   if (loading) {
-    return <Typography sx={{ color: "#fff" }}>Loading...</Typography>;
+    return <Typography sx={{ color: "var(--text)" }}>Loading...</Typography>;
   }
 
   if (!notes.length) {
-    return <Typography sx={{ color: "#fff" }}>No notes found</Typography>;
+    return <Typography sx={{ color: "var(--text)" }}>No notes found</Typography>;
   }
 
   if (viewMode === "grid") {
@@ -246,7 +246,7 @@ export default function NotebookCard({ viewMode, notes, loading }) {
                     transition: "all 0.2s ease",
                     "&:hover": {
                       borderColor: "rgba(122, 134, 255, 0.35)",
-                      backgroundColor: "rgba(255,255,255,0.04)",
+                      backgroundColor: "rgba(var(--ov),0.04)",
                       transform: "translateY(-3px)",
                     },
                   }}
@@ -264,7 +264,7 @@ export default function NotebookCard({ viewMode, notes, loading }) {
                   </Stack>
 
                   <Typography
-                    sx={{ color: "#9aa4b2", fontSize: 14, mt: 1, flex: 1 }}
+                    sx={{ color: "var(--text-muted)", fontSize: 14, mt: 1, flex: 1 }}
                     noWrap
                   >
                     {note.summary || note.content}
@@ -316,7 +316,7 @@ export default function NotebookCard({ viewMode, notes, loading }) {
               transition: "all 0.2s ease",
               "&:hover": {
                 borderColor: "rgba(122, 134, 255, 0.35)",
-                backgroundColor: "rgba(255,255,255,0.04)",
+                backgroundColor: "rgba(var(--ov),0.04)",
               },
             }}
           >
@@ -339,7 +339,7 @@ export default function NotebookCard({ viewMode, notes, loading }) {
               </Stack>
             </Stack>
 
-            <Typography sx={{ color: "#9aa4b2", fontSize: 14, mt: 0.5 }} noWrap>
+            <Typography sx={{ color: "var(--text-muted)", fontSize: 14, mt: 0.5 }} noWrap>
               {note.summary || note.content || "No content"}
             </Typography>
           </Card>

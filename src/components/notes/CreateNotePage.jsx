@@ -449,8 +449,8 @@ const CreateNotePage = () => {
           mb: 2,
           borderRadius: "999px",
           textTransform: "none",
-          color: "#fff",
-          border: "1px solid rgba(255,255,255,0.12)",
+          color: "var(--text)",
+          border: "1px solid rgba(var(--ov),0.12)",
         }}
       >
         New note
@@ -459,15 +459,15 @@ const CreateNotePage = () => {
       <Paper
         sx={{
           p: 2,
-          background: "#111827",
+          background: "var(--surface-2)",
           borderRadius: 3,
-          color: "#fff",
+          color: "var(--text)",
           mb: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-          <SearchOutlinedIcon sx={{ color: "rgba(255,255,255,0.6)" }} />
-          <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
+          <SearchOutlinedIcon sx={{ color: "rgba(var(--ov),0.6)" }} />
+          <Typography sx={{ color: "rgba(var(--ov),0.6)" }}>
             Search saved notes
           </Typography>
         </Box>
@@ -478,14 +478,14 @@ const CreateNotePage = () => {
             sx={{
               borderRadius: "999px",
               textTransform: "none",
-              color: "#fff",
-              borderColor: "rgba(255,255,255,0.12)",
+              color: "var(--text)",
+              borderColor: "rgba(var(--ov),0.12)",
             }}
           >
             Notes
           </Button>
 
-          <IconButton sx={{ color: "#fff" }}>
+          <IconButton sx={{ color: "var(--text)" }}>
             <ArrowForwardRoundedIcon />
           </IconButton>
         </Box>
@@ -494,10 +494,10 @@ const CreateNotePage = () => {
       <Box sx={{ mt: 2 }}>
         {loading && notes.length === 0 ? (
           <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-            <CircularProgress size={24} sx={{ color: "#fff" }} />
+            <CircularProgress size={24} sx={{ color: "var(--text)" }} />
           </Box>
         ) : notes.length === 0 ? (
-          <Box sx={{ mt: 8, textAlign: "center", color: "rgba(255,255,255,0.55)" }}>
+          <Box sx={{ mt: 8, textAlign: "center", color: "rgba(var(--ov),0.55)" }}>
             <Typography sx={{ fontWeight: 600, mb: 1 }}>
               No saved notes yet
             </Typography>
@@ -521,13 +521,13 @@ const CreateNotePage = () => {
                   position: "relative",
                   background: isSelected
                     ? "rgba(99,102,241,0.18)"
-                    : "rgba(255,255,255,0.03)",
+                    : "rgba(var(--ov),0.03)",
                   border: isSelected
                     ? "1px solid rgba(99,102,241,0.45)"
-                    : "1px solid rgba(255,255,255,0.06)",
-                  color: "#fff",
+                    : "1px solid rgba(var(--ov),0.06)",
+                  color: "var(--text)",
                   boxShadow: "none",
-                  "&:hover": { background: "rgba(255,255,255,0.06)" },
+                  "&:hover": { background: "rgba(var(--ov),0.06)" },
                 }}
               >
                 <Box
@@ -547,10 +547,10 @@ const CreateNotePage = () => {
                       handleEditNote(note);
                     }}
                     sx={{
-                      color: "rgba(255,255,255,0.7)",
+                      color: "rgba(var(--ov),0.7)",
                       "&:hover": {
-                        color: "#fff",
-                        background: "rgba(255,255,255,0.08)",
+                        color: "var(--text)",
+                        background: "rgba(var(--ov),0.08)",
                       },
                     }}
                   >
@@ -591,7 +591,7 @@ const CreateNotePage = () => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: "rgba(255,255,255,0.6)",
+                    color: "rgba(var(--ov),0.6)",
                     display: "-webkit-box",
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",
@@ -614,8 +614,8 @@ const CreateNotePage = () => {
         height: "100dvh",
         boxSizing: "border-box",
         overflow: "hidden",
-        background: "#111827",
-        color: "#fff",
+        background: "var(--surface-2)",
+        color: "var(--text)",
         p: 2,
         display: "flex",
         flexDirection: "column",
@@ -631,33 +631,35 @@ const CreateNotePage = () => {
           flexShrink: 0,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0, flex: { xs: 1, md: "0 1 auto" } }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0, flex: 1 }}>
           <Tooltip title="Open notes list">
             <IconButton
               onClick={() => setMobileNotesOpen(true)}
               sx={{
-                color: "#fff",
+                color: "var(--text)",
                 display: { xs: "inline-flex", md: "none" },
-                border: "1px solid rgba(255,255,255,0.18)",
+                border: "1px solid rgba(var(--ov),0.18)",
               }}
               size="small"
             >
               <MenuRoundedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxWidth: { xs: "100%", md: "45%" },
-              fontSize: { xs: "1.05rem", sm: "1.25rem", md: "1.5rem" },
-            }}
-          >
-            {title || "Untitled notebook"}
-          </Typography>
+          <Tooltip title={title || "Untitled notebook"}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                minWidth: 0,
+                fontSize: { xs: "1.05rem", sm: "1.25rem", md: "1.5rem" },
+              }}
+            >
+              {title || "Untitled notebook"}
+            </Typography>
+          </Tooltip>
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, md: 1.5 }, flexShrink: 0 }}>
@@ -671,8 +673,8 @@ const CreateNotePage = () => {
                 borderRadius: "999px",
                 px: 2.6,
                 textTransform: "none",
-                color: "#0b1020",
-                backgroundColor: "#ffffff",
+                color: "var(--bg)",
+                backgroundColor: "var(--text)",
                 boxShadow: "none",
                 "&:hover": {
                   backgroundColor: "#e8ecf7",
@@ -694,8 +696,8 @@ const CreateNotePage = () => {
             sx={{
               borderRadius: "999px",
               textTransform: "none",
-              color: "#fff",
-              borderColor: "rgba(255,255,255,0.2)",
+              color: "var(--text)",
+              borderColor: "rgba(var(--ov),0.2)",
               display: { xs: "none", md: "inline-flex" },
             }}
           >
@@ -708,8 +710,8 @@ const CreateNotePage = () => {
             sx={{
               borderRadius: "999px",
               textTransform: "none",
-              color: "#fff",
-              borderColor: "rgba(255,255,255,0.2)",
+              color: "var(--text)",
+              borderColor: "rgba(var(--ov),0.2)",
               display: { xs: "none", md: "inline-flex" },
             }}
           >
@@ -720,9 +722,9 @@ const CreateNotePage = () => {
             <IconButton
               size="small"
               sx={{
-                color: "#fff",
+                color: "var(--text)",
                 display: { xs: "inline-flex", md: "none" },
-                border: "1px solid rgba(255,255,255,0.18)",
+                border: "1px solid rgba(var(--ov),0.18)",
               }}
             >
               <ShareOutlinedIcon fontSize="small" />
@@ -731,7 +733,7 @@ const CreateNotePage = () => {
 
           <IconButton
             sx={{
-              color: "#fff",
+              color: "var(--text)",
               display: { xs: "none", sm: "inline-flex" },
             }}
           >
@@ -761,8 +763,8 @@ const CreateNotePage = () => {
         <Paper
           sx={{
             width: "26%",
-            background: "#1f2937",
-            color: "#fff",
+            background: "var(--surface)",
+            color: "var(--text)",
             borderRadius: 3,
             p: 2,
             height: "100%",
@@ -781,11 +783,11 @@ const CreateNotePage = () => {
             "&::-webkit-scrollbar": { width: "8px" },
             "&::-webkit-scrollbar-track": { background: "transparent" },
             "&::-webkit-scrollbar-thumb": {
-              background: "rgba(255,255,255,0.3)",
+              background: "rgba(var(--ov),0.3)",
               borderRadius: "999px",
             },
             "&::-webkit-scrollbar-thumb:hover": {
-              background: "rgba(255,255,255,0.5)",
+              background: "rgba(var(--ov),0.5)",
             },
           }}
         >
@@ -801,9 +803,9 @@ const CreateNotePage = () => {
           PaperProps={{
             sx: {
               width: { xs: "85vw", sm: 360 },
-              background: "#1f2937",
+              background: "var(--surface)",
               backgroundImage: "none",
-              color: "#fff",
+              color: "var(--text)",
               p: 2,
               boxSizing: "border-box",
             },
@@ -824,85 +826,95 @@ const CreateNotePage = () => {
         <Paper
           sx={{
             flex: 1,
-            background: "#1f2937",
-            color: "#fff",
+            background: "var(--surface)",
+            color: "var(--text)",
             borderRadius: 3,
-            p: { xs: 2, md: 4 },
+            p: 0,
             height: "100%",
             boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
 
-            overflowY: "auto",
-            overflowX: "hidden",
-            scrollBehavior: "smooth",
-
-            // Firefox
-            // scrollbarWidth: "none",
-
-            // IE / Edge old
-            msOverflowStyle: "none",
-
-            // important
             backgroundClip: "padding-box",
             clipPath: "inset(0 round 24px)",
-
-            // Chrome / Edge
-            "&::-webkit-scrollbar": {
-              width: "8px", // ✅ MUST use width
-            },
-            "&::-webkit-scrollbar-track": {
-              background: "transparent",
-            },
-            "&::-webkit-scrollbar-thumb": {
-              background: "rgba(255,255,255,0.3)",
-              borderRadius: "999px",
-            },
-            "&::-webkit-scrollbar-thumb:hover": {
-              background: "rgba(255,255,255,0.5)",
-            },
           }}
         >
-          <Box sx={{ maxWidth: 1200, mx: "auto" }}>
-            <InputBase
-              fullWidth
-              placeholder="Untitled note"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              readOnly={!isEditMode}
-              sx={{
-                color: "#fff",
-                fontSize: { xs: "1.5rem", sm: "2rem", md: "2.6rem" },
-                fontWeight: 600,
-                mb: 2,
-              }}
-            />
+          {/* Fixed title header — stays put while the content below scrolls */}
+          <Box
+            sx={{
+              flexShrink: 0,
+              px: { xs: 2, md: 4 },
+              pt: { xs: 2, md: 4 },
+            }}
+          >
+            <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+              <InputBase
+                fullWidth
+                placeholder="Untitled note"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                readOnly={!isEditMode}
+                sx={{
+                  color: "var(--text)",
+                  fontSize: { xs: "1.5rem", sm: "2rem", md: "2.6rem" },
+                  fontWeight: 600,
+                  mb: 1.5,
+                }}
+              />
+            </Box>
+
+            <Divider />
           </Box>
 
-          <Divider />
+          {/* Scrollable content + AI sections */}
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollBehavior: "smooth",
+              px: { xs: 2, md: 4 },
+              pt: { xs: 2, md: 3 },
+              pb: { xs: 2, md: 4 },
 
-          <Box sx={{ maxWidth: 1200, mx: "auto" }}>
-            <InputBase
-              fullWidth
-              multiline
-              minRows={20}
-              placeholder="Start writing your note here..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              readOnly={!isEditMode}
-              sx={{
-                color: "rgba(255,255,255,0.92)",
-                fontSize: "1rem",
-                lineHeight: 1.9,
-                alignItems: "flex-start",
-                "& textarea": {
-                  overflow: "auto !important",
-                },
-              }}
-            />
-          </Box>
+              msOverflowStyle: "none",
+              "&::-webkit-scrollbar": { width: "8px" },
+              "&::-webkit-scrollbar-track": { background: "transparent" },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(var(--ov),0.3)",
+                borderRadius: "999px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "rgba(var(--ov),0.5)",
+              },
+            }}
+          >
+            <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+              <InputBase
+                fullWidth
+                multiline
+                minRows={20}
+                placeholder="Start writing your note here..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                readOnly={!isEditMode}
+                sx={{
+                  color: "rgba(var(--ov),0.92)",
+                  fontSize: "1rem",
+                  lineHeight: 1.9,
+                  alignItems: "flex-start",
+                  "& textarea": {
+                    overflow: "auto !important",
+                  },
+                }}
+              />
+            </Box>
 
           {selectedNoteId && (
             <Box sx={{ maxWidth: 1200, mx: "auto", mt: 4 }}>
-              <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mb: 2 }} />
+              <Divider sx={{ borderColor: "rgba(var(--ov),0.08)", mb: 2 }} />
               <Box
                 sx={{
                   display: "flex",
@@ -926,7 +938,7 @@ const CreateNotePage = () => {
                     }
                     label="Generating..."
                     sx={{
-                      color: "#fff",
+                      color: "var(--text)",
                       backgroundColor: "rgba(99,102,241,0.25)",
                       "& .MuiChip-icon": { ml: 1, mr: -0.5 },
                     }}
@@ -937,7 +949,7 @@ const CreateNotePage = () => {
                     size="small"
                     label="Ready"
                     sx={{
-                      color: "#fff",
+                      color: "var(--text)",
                       backgroundColor: "rgba(34,197,94,0.25)",
                     }}
                   />
@@ -947,7 +959,7 @@ const CreateNotePage = () => {
                     size="small"
                     label="Failed"
                     sx={{
-                      color: "#fff",
+                      color: "var(--text)",
                       backgroundColor: "rgba(239,68,68,0.3)",
                     }}
                   />
@@ -969,15 +981,15 @@ const CreateNotePage = () => {
                     sx={{
                       borderRadius: "999px",
                       textTransform: "none",
-                      color: "#fff",
+                      color: "var(--text)",
                       backgroundColor: "rgba(99,102,241,0.35)",
                       px: 2,
                       "&:hover": {
                         backgroundColor: "rgba(99,102,241,0.55)",
                       },
                       "&.Mui-disabled": {
-                        color: "rgba(255,255,255,0.4)",
-                        backgroundColor: "rgba(255,255,255,0.05)",
+                        color: "rgba(var(--ov),0.4)",
+                        backgroundColor: "rgba(var(--ov),0.05)",
                       },
                     }}
                   >
@@ -994,9 +1006,9 @@ const CreateNotePage = () => {
                 sx={{
                   p: 2.5,
                   borderRadius: 2,
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "rgba(255,255,255,0.85)",
+                  background: "rgba(var(--ov),0.03)",
+                  border: "1px solid rgba(var(--ov),0.08)",
+                  color: "rgba(var(--ov),0.85)",
                   boxShadow: "none",
                 }}
               >
@@ -1008,7 +1020,7 @@ const CreateNotePage = () => {
                   <Typography
                     sx={{
                       fontSize: "0.9rem",
-                      color: "rgba(255,255,255,0.55)",
+                      color: "rgba(var(--ov),0.55)",
                       fontStyle: "italic",
                     }}
                   >
@@ -1027,7 +1039,7 @@ const CreateNotePage = () => {
                   <Typography
                     sx={{
                       fontSize: "0.9rem",
-                      color: "rgba(255,255,255,0.5)",
+                      color: "rgba(var(--ov),0.5)",
                       fontStyle: "italic",
                     }}
                   >
@@ -1055,6 +1067,7 @@ const CreateNotePage = () => {
           )}
 
           {selectedNote && <AiInsightsPanel note={selectedNote} />}
+          </Box>
 
           {/* Delete Confirmation Modal */}
           <Dialog
@@ -1068,10 +1081,11 @@ const CreateNotePage = () => {
             }}
             PaperProps={{
               sx: {
-                background: "#1f2937",
-                color: "#fff",
+                background: "var(--surface)",
+                color: "var(--text)",
                 borderRadius: 3,
-                minWidth: 420,
+                minWidth: { xs: "auto", sm: 420 },
+                width: { xs: "calc(100vw - 64px)", sm: "auto" },
                 boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
               },
             }}
@@ -1081,7 +1095,7 @@ const CreateNotePage = () => {
                 Delete note?
               </Typography>
 
-              <Typography sx={{ color: "rgba(255,255,255,0.7)", mb: 3 }}>
+              <Typography sx={{ color: "rgba(var(--ov),0.7)", mb: 3 }}>
                 "{deleteTarget?.title || "Untitled note"}" will be permanently
                 deleted. This action cannot be undone.
               </Typography>
@@ -1095,8 +1109,8 @@ const CreateNotePage = () => {
                   sx={{
                     borderRadius: "999px",
                     textTransform: "none",
-                    color: "#fff",
-                    border: "1px solid rgba(255,255,255,0.18)",
+                    color: "var(--text)",
+                    border: "1px solid rgba(var(--ov),0.18)",
                     px: 2.5,
                   }}
                 >
@@ -1108,14 +1122,14 @@ const CreateNotePage = () => {
                   sx={{
                     borderRadius: "999px",
                     textTransform: "none",
-                    color: "#fff",
+                    color: "var(--text)",
                     backgroundColor: "rgba(239,68,68,0.85)",
                     px: 2.5,
                     "&:hover": {
                       backgroundColor: "rgba(239,68,68,1)",
                     },
                     "&.Mui-disabled": {
-                      color: "rgba(255,255,255,0.5)",
+                      color: "rgba(var(--ov),0.5)",
                       backgroundColor: "rgba(239,68,68,0.35)",
                     },
                   }}
@@ -1138,10 +1152,11 @@ const CreateNotePage = () => {
             }}
             PaperProps={{
               sx: {
-                background: "#1f2937",
-                color: "#fff",
+                background: "var(--surface)",
+                color: "var(--text)",
                 borderRadius: 3,
-                minWidth: 420,
+                minWidth: { xs: "auto", sm: 420 },
+                width: { xs: "calc(100vw - 64px)", sm: "auto" },
                 boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
               },
             }}
@@ -1151,7 +1166,7 @@ const CreateNotePage = () => {
                 Required Fields
               </Typography>
 
-              <Typography sx={{ color: "rgba(255,255,255,0.7)", mb: 3 }}>
+              <Typography sx={{ color: "rgba(var(--ov),0.7)", mb: 3 }}>
                 Title and content are required.
               </Typography>
 
@@ -1161,8 +1176,8 @@ const CreateNotePage = () => {
                   sx={{
                     borderRadius: "999px",
                     textTransform: "none",
-                    color: "#fff",
-                    border: "1px solid rgba(255,255,255,0.18)",
+                    color: "var(--text)",
+                    border: "1px solid rgba(var(--ov),0.18)",
                     px: 2.5,
                   }}
                 >
@@ -1183,7 +1198,7 @@ const CreateNotePage = () => {
               zIndex: 3,
               width: 56,
               height: 56,
-              color: "#fff",
+              color: "#ffffff",
               backgroundColor: isRecording
                 ? "rgba(239,68,68,0.95)"
                 : "rgba(99,102,241,0.95)",

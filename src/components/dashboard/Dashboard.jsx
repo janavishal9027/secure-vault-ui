@@ -79,7 +79,7 @@ export default function Dashboard() {
         overflow: { xs: "auto", md: "hidden" },
         boxSizing: "border-box",
         background:
-          "radial-gradient(circle at top left, rgba(91, 100, 255, 0.12), transparent 22%), #0b1020",
+          "radial-gradient(circle at top left, rgba(91, 100, 255, 0.12), transparent 22%), var(--bg)",
       }}
     >
       <Container
@@ -99,7 +99,7 @@ export default function Dashboard() {
 
         <Typography
           sx={{
-            color: "#f8fafc",
+            color: "var(--text)",
             fontSize: { xs: 28, sm: 38, md: 56, lg: 64 },
             fontWeight: 500,
             letterSpacing: { xs: -0.5, md: -1.5 },
@@ -130,7 +130,7 @@ export default function Dashboard() {
         >
           <Typography
             sx={{
-              color: "#f5f7fb",
+              color: "var(--text)",
               fontSize: { xs: 22, sm: 26, md: 30 },
               fontWeight: 500,
               mb: { xs: 1.5, md: 2.5 },
