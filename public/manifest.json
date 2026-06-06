@@ -1,7 +1,17 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Secure VAULT",
+  "name": "Secure VAULT — AI-powered secure notes",
   "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "512x512 192x192"
+    },
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
@@ -20,6 +30,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#22c55e",
+  "background_color": "#0b1020"
 }

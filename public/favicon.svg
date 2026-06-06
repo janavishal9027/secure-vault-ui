@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- drop shadow -->
+  <ellipse cx="256" cy="478" rx="116" ry="13" fill="#d9dde2"/>
+  <!-- shield border (light gray rim) -->
+  <path d="M256 40 L432 96 Q436 306 256 470 Q76 306 80 96 Z" fill="#d4d9df"/>
+  <!-- shield body (lighter blue) -->
+  <path id="vaultShield" d="M256 58 L416 108 Q420 298 256 448 Q92 298 96 108 Z" fill="#29a8e0"/>
+  <!-- right half, slightly darker blue -->
+  <clipPath id="vaultClip"><use href="#vaultShield"/></clipPath>
+  <rect x="256" y="40" width="200" height="432" fill="#1f95cf" clip-path="url(#vaultClip)"/>
+  <!-- padlock body -->
+  <rect x="186" y="250" width="140" height="120" rx="14" fill="#ffffff"/>
+  <!-- open shackle -->
+  <path d="M300 252 V206 a44 44 0 1 0 -88 0" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round"/>
+  <!-- keyhole -->
+  <circle cx="256" cy="298" r="17" fill="#1f95cf"/>
+  <rect x="248" y="306" width="16" height="42" rx="7" fill="#1f95cf"/>
+</svg>
