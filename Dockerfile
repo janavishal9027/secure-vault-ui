@@ -8,21 +8,22 @@ RUN npm install
 COPY . .
 
 # CRA inlines REACT_APP_* env vars at build time, so per-environment URLs
-# are baked into the bundle. Default values point at localhost so the
-# image still runs as a no-op against a dev backend if you skip them.
-# When you DO need env-specific URLs, pass them via --build-arg in the
-# pipeline (see ci/deploy.sh in the digital-banking sibling repo for the
-# same pattern in env-agnostic mode).
-ARG REACT_APP_AUTH_BASE_URL=http://localhost:3211
-ARG REACT_APP_ROLE_BASE_URL=http://localhost:3212
-ARG REACT_APP_NOTE_BASE_URL=http://localhost:3213
-ARG REACT_APP_AI_BASE_URL=http://localhost:8001
+# are baked into the bundle. These default to EMPTY on purpose: with no value,
+# src/components/utils/url.js falls back to same-origin (relative) URLs in a
+# production build, so the bundle works on any host where the backends are
+# path-routed behind the same domain (/authentication, /roles, /notes via the
+# ingress) — no per-environment host baking needed.
+# To target cross-origin backends instead, pass absolute URLs via --build-arg.
+ARG REACT_APP_AUTH_BASE_URL=
+ARG REACT_APP_ROLE_BASE_URL=
+ARG REACT_APP_NOTE_BASE_URL=
+ARG REACT_APP_AI_BASE_URL=
 ENV REACT_APP_AUTH_BASE_URL=$REACT_APP_AUTH_BASE_URL \
     REACT_APP_ROLE_BASE_URL=$REACT_APP_ROLE_BASE_URL \
     REACT_APP_NOTE_BASE_URL=$REACT_APP_NOTE_BASE_URL \
     REACT_APP_AI_BASE_URL=$REACT_APP_AI_BASE_URL
 
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 ENV NODE_OPTIONS=--max-old-space-size=4096
 ENV GENERATE_SOURCEMAP=false
 # CI=false keeps CRA's non-interactive behavior but does NOT promote
