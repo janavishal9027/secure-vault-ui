@@ -24,7 +24,7 @@ function App() {
         <Route path={"/dashboard/create-note"} element={<CreateNotePage />} />
         <Route path={"/dashboard/2fa-settings"} element={<TwoFactorSettings />} />
         <Route path={"/dashboard/ai-chat"} element={<AiChatPage />} />
-        <Route path="/notes/oauth2/redirect" element={<OAuthRedirect />} />
+        <Route path="/oauth2/redirect" element={<OAuthRedirect />} />
       </Routes>
     </>
   );
