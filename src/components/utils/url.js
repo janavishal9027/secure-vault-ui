@@ -24,7 +24,12 @@ export const noteBaseUrl = base(
   process.env.REACT_APP_NOTE_BASE_URL,
   "http://localhost:3213",
 );
-export const aiBaseUrl = base(
-  process.env.REACT_APP_AI_BASE_URL,
-  "http://localhost:8001",
-);
+// ai-core is the one backend served at the ROOT of its pod (/chat, /search,
+// /rag, /tags, /recommendations). Unlike the Spring services it has no
+// context-path of its own, so in production the ingress exposes it under the
+// "/ai-core" prefix and strips that prefix before forwarding to the pod.
+// That prefix therefore exists ONLY in production — locally we hit the uvicorn
+// port directly with no prefix. So its production fallback is "/ai-core"
+// (relative, ingress-routed), not "" like the others.
+export const aiBaseUrl =
+  process.env.REACT_APP_AI_BASE_URL || (isDev ? "http://localhost:8001" : "/ai-core");
