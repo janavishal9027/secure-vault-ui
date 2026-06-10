@@ -17,10 +17,11 @@ import {
   DialogContent,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
@@ -48,6 +49,7 @@ const SUMMARY_POLL_MAX_ATTEMPTS = 40;
 
 const CreateNotePage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedNoteId = searchParams.get("noteId");
@@ -180,6 +182,7 @@ const CreateNotePage = () => {
       const refreshed = await dispatch(getNoteById(selectedNoteId));
       const status = refreshed?.summaryStatus;
       if (
+        !refreshed ||            // note deleted / not found (404) — stop polling
         status === "READY" ||
         status === "FAILED" ||
         attempts >= SUMMARY_POLL_MAX_ATTEMPTS
@@ -632,6 +635,19 @@ const CreateNotePage = () => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0, flex: 1 }}>
+          <Tooltip title="Back to dashboard">
+            <IconButton
+              onClick={() => navigate("/dashboard")}
+              aria-label="Back to dashboard"
+              sx={{
+                color: "var(--text)",
+                border: "1px solid rgba(var(--ov),0.18)",
+              }}
+              size="small"
+            >
+              <ArrowBackRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Open notes list">
             <IconButton
               onClick={() => setMobileNotesOpen(true)}

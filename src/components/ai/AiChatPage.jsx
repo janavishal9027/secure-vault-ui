@@ -1222,7 +1222,8 @@ const MarkdownContent = ({ text }) => (
         padding: "0.15em 0.4em",
         borderRadius: "4px",
       },
-      // Tables
+      // Tables — render in a horizontally scrollable block so wide tables
+      // don't crush their columns on mobile.
       "& table": {
         borderCollapse: "collapse",
         width: "100%",
@@ -1230,12 +1231,22 @@ const MarkdownContent = ({ text }) => (
         fontSize: "0.88rem",
         display: "block",
         overflowX: "auto",
+        WebkitOverflowScrolling: "touch", // momentum scroll on touch devices
       },
       "& th, & td": {
         border: "1px solid rgba(var(--ov),0.15)",
         px: 1.25,
         py: 0.75,
         textAlign: "left",
+        verticalAlign: "top",
+        // The parent Box uses wordBreak:"break-word", which shatters whole
+        // words (e.g. "Requirement" -> "Req uire me nt") when a column gets
+        // narrow on mobile. Override it for cells: wrap at spaces only, so
+        // each column is at least as wide as its longest word and the table
+        // scrolls horizontally instead of breaking words apart.
+        wordBreak: "normal",
+        overflowWrap: "break-word",
+        minWidth: "5.5rem",
       },
       "& th": {
         backgroundColor: "rgba(var(--ov),0.06)",
