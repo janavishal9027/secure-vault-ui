@@ -131,7 +131,7 @@ export default function TopBar() {
         alignItems="center"
         sx={{ flexShrink: 0 }}
       >
-        {/* Full labelled button on >= sm */}
+        {/* VaultGPT — opens the AI chat (>= sm labelled, < sm icon-only) */}
         <Tooltip title={VAULTGPT_TAGLINE} arrow>
           <Button
             startIcon={<AutoAwesomeRoundedIcon />}
@@ -142,8 +142,6 @@ export default function TopBar() {
             VaultGPT
           </Button>
         </Tooltip>
-
-        {/* Icon-only button on < sm */}
         <Tooltip title={VAULTGPT_TAGLINE} arrow>
           <IconButton
             onClick={() => navigate("/dashboard/ai-chat")}
