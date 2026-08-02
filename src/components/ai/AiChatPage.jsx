@@ -10,6 +10,7 @@ import {
   Drawer,
   FormControlLabel,
   IconButton,
+  Link,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -35,6 +36,7 @@ import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
 import UnarchiveOutlinedIcon from "@mui/icons-material/UnarchiveOutlined";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import VpnKeyRoundedIcon from "@mui/icons-material/VpnKeyRounded";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -48,6 +50,16 @@ import {
   deleteConversationService,
   updateConversationService,
 } from "../store/services/AiCoreService";
+import {
+  describeAiFetchError,
+  describeAiStreamError,
+  KEYS_ROUTE,
+} from "../utils/aiErrors";
+import { prettyModel } from "../utils/aiModels";
+import {
+  addProviderKeyService,
+  listProviderKeysService,
+} from "../store/services/ProviderKeysService";
 
 const formatConvDate = (value) => {
   if (!value) return "";
@@ -63,29 +75,9 @@ const formatConvDate = (value) => {
     : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
-// Default until the first response tells us the real model the server used.
-// Backend (ai-core-service) chats via OpenRouter using openai/gpt-oss-120b.
-const DEFAULT_MODEL = "openai/gpt-oss-120b";
-
-// Friendly labels for known model ids; everything else uses the fallback below.
-const MODEL_LABELS = {
-  "openai/gpt-oss-120b": "GPT-OSS-120B",
-  "gpt-oss-120b": "GPT-OSS-120B",
-  "gemini-2.5-flash": "Gemini 2.5 Flash",
-};
-
-// e.g. "openai/gpt-oss-120b" -> "GPT-OSS-120B", "gemini-2.5-flash" -> "Gemini 2.5 Flash"
-const prettyModel = (id) => {
-  if (!id) return "";
-  if (MODEL_LABELS[id]) return MODEL_LABELS[id];
-  const name = id.includes("/") ? id.split("/").pop() : id;
-  return name
-    .split(/[-_]/)
-    .map((part) =>
-      /\d/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1),
-    )
-    .join(" ");
-};
+// The chain falls through on rate limits, so which model answered is only known
+// once one actually has. Nothing is shown until then rather than guessing at
+// the head of the chain.
 
 const AiChatPage = () => {
   const navigate = useNavigate();
@@ -102,8 +94,20 @@ const AiChatPage = () => {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  // Set when the failure was a missing Groq key (424) — the user needs to add
+  // one, not retry, so the error gets a link to the Keys page.
+  const [errorNeedsKey, setErrorNeedsKey] = useState(false);
   const [useNotesContext, setUseNotesContext] = useState(false);
-  const [model, setModel] = useState(DEFAULT_MODEL);
+  // Empty until a model actually answers — see the note above prettyModel.
+  const [model, setModel] = useState("");
+
+  // Chat is unusable without the caller's own Groq key, so the page resolves
+  // that up front and gates the composer instead of letting every send fail.
+  // null = still checking, false = no key, true = ready.
+  const [hasKey, setHasKey] = useState(null);
+  const [keyDraft, setKeyDraft] = useState("");
+  const [savingKey, setSavingKey] = useState(false);
+  const [keyError, setKeyError] = useState("");
 
   // Per-conversation context menu + dialogs
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -143,6 +147,46 @@ const AiChatPage = () => {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  const refreshKeyState = useCallback(async () => {
+    try {
+      const res = await listProviderKeysService();
+      setHasKey((res.data?.keys || []).some((k) => k.isActive));
+    } catch (err) {
+      // Treat an unreadable key list as "no key": the gate explains what to do,
+      // which beats letting every send fail with the same error.
+      setHasKey(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshKeyState();
+  }, [refreshKeyState]);
+
+  const handleSaveKey = async () => {
+    const trimmed = keyDraft.trim();
+    if (trimmed.length < 8) {
+      setKeyError("Paste a full Groq API key.");
+      return;
+    }
+    setSavingKey(true);
+    setKeyError("");
+    try {
+      await addProviderKeyService({ key: trimmed });
+      setKeyDraft("");
+      setHasKey(true);
+      setError("");
+      setErrorNeedsKey(false);
+    } catch (err) {
+      setKeyError(
+        err?.response?.data?.detail ||
+          err?.response?.data?.message ||
+          "Could not save that key.",
+      );
+    } finally {
+      setSavingKey(false);
+    }
+  };
 
   // Leave the Archived view automatically once nothing is archived.
   useEffect(() => {
@@ -312,6 +356,7 @@ const AiChatPage = () => {
     if (!text || sending) return;
 
     setError("");
+    setErrorNeedsKey(false);
     setDraft("");
     // Add the user message + an empty assistant placeholder we stream into.
     setMessages((prev) => [
@@ -324,6 +369,11 @@ const AiChatPage = () => {
     let nextConversationId = conversationId;
     let isNew = false;
     let streamError = "";
+    let streamErrorCode = "";
+    // Held back until the stream finishes cleanly. The `meta` event arrives
+    // before any tokens do, so committing it straight to state would label a
+    // failed request with a model that never answered.
+    let streamedModel = "";
 
     try {
       const response = await aiChatStreamRequest({
@@ -333,7 +383,13 @@ const AiChatPage = () => {
       });
 
       if (!response.ok || !response.body) {
-        throw new Error(`Chat request failed (${response.status}).`);
+        // The body carries the actionable detail (no key / rate-limited), so
+        // read it rather than reporting a bare status code.
+        const info = await describeAiFetchError(response, "Chat request failed.");
+        setErrorNeedsKey(info.needsKey);
+        // The key may have been removed in another tab — re-gate the composer.
+        if (info.needsKey) setHasKey(false);
+        throw new Error(info.message);
       }
 
       const reader = response.body.getReader();
@@ -366,7 +422,10 @@ const AiChatPage = () => {
             nextConversationId = evt.conversationId || conversationId;
             isNew = !conversationId && Boolean(evt.conversationId);
             if (evt.conversationId) setConversationId(evt.conversationId);
-            if (evt.model) setModel(evt.model);
+            // The chain's first choice, so the UI has something immediately.
+            // Superseded by the `model` event below once a model has actually
+            // opened the stream.
+            if (evt.model) streamedModel = evt.model;
             if (Array.isArray(evt.citations) && evt.citations.length) {
               setMessages((prev) => {
                 const copy = [...prev];
@@ -377,15 +436,49 @@ const AiChatPage = () => {
                 return copy;
               });
             }
+            if (evt.contextUsed || evt.graphFacts) {
+              setMessages((prev) => {
+                const copy = [...prev];
+                const last = copy[copy.length - 1];
+                if (last && last.role === "assistant") {
+                  copy[copy.length - 1] = {
+                    ...last,
+                    ...(evt.contextUsed ? { contextUsed: evt.contextUsed } : {}),
+                    // Relationships the model was shown. Without these the
+                    // [Gn] markers in the reply would resolve to nothing —
+                    // the silently-lost citation the contract exists to
+                    // prevent.
+                    ...(evt.graphFacts ? { graphFacts: evt.graphFacts } : {}),
+                  };
+                }
+                return copy;
+              });
+            }
+          } else if (evt.type === "model") {
+            // Sent the moment a model opens the stream. When the chain fell
+            // back, this is the only accurate attribution the client gets —
+            // `meta` could only ever carry the first choice.
+            if (evt.model) streamedModel = evt.model;
           } else if (evt.type === "delta") {
             appendToAssistant(evt.text || "");
           } else if (evt.type === "error") {
             streamError = evt.message || "Stream error.";
+            streamErrorCode = evt.code || "";
           }
         }
       }
 
-      if (streamError) throw new Error(streamError);
+      if (streamError) {
+        // The stream already answered 200, so the failure arrives as an event
+        // rather than a status — classify it the same way regardless.
+        const info = describeAiStreamError(streamError, streamErrorCode);
+        setErrorNeedsKey(info.needsKey);
+        if (info.needsKey) setHasKey(false);
+        throw new Error(info.message);
+      }
+
+      // A reply landed, so it is now safe to name the model behind it.
+      if (streamedModel) setModel(streamedModel);
 
       if (
         isNew ||
@@ -394,6 +487,8 @@ const AiChatPage = () => {
         loadConversations();
       }
     } catch (err) {
+      // Nothing answered — drop any model label rather than leave a stale one.
+      setModel("");
       setError(err?.message || "Chat request failed.");
       // Drop the (possibly empty) assistant placeholder and the user message,
       // and restore the draft so the user can retry.
@@ -452,7 +547,7 @@ const AiChatPage = () => {
         <ChatBubbleOutlineRoundedIcon
           sx={{
             fontSize: 16,
-            color: active ? "#a5b4fc" : "rgba(var(--ov),0.5)",
+            color: active ? "var(--accent-soft)" : "rgba(var(--ov),0.5)",
             flexShrink: 0,
           }}
         />
@@ -468,7 +563,7 @@ const AiChatPage = () => {
           >
             {c.title || "Untitled chat"}
           </Typography>
-          <Typography sx={{ fontSize: 11, color: "rgba(var(--ov),0.45)" }}>
+          <Typography sx={{ fontSize: 11, color: "var(--text-muted)" }}>
             {formatConvDate(c.updatedAt)}
           </Typography>
         </Box>
@@ -477,7 +572,7 @@ const AiChatPage = () => {
           <PushPinRoundedIcon
             sx={{
               fontSize: 14,
-              color: "#a5b4fc",
+              color: "var(--accent-soft)",
               transform: "rotate(45deg)",
               flexShrink: 0,
             }}
@@ -490,7 +585,7 @@ const AiChatPage = () => {
           onClick={(e) => handleOpenConvMenu(e, c)}
           sx={{
             flexShrink: 0,
-            color: "rgba(var(--ov),0.5)",
+            color: "var(--text-muted)",
             "&:hover": {
               color: "var(--text)",
               backgroundColor: "rgba(var(--ov),0.08)",
@@ -564,7 +659,7 @@ const AiChatPage = () => {
           conversations.length === 0 &&
           archivedConversations.length === 0 && (
             <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
-              <CircularProgress size={18} sx={{ color: "#a5b4fc" }} />
+              <CircularProgress size={18} sx={{ color: "var(--accent-soft)" }} />
             </Box>
           )}
 
@@ -610,7 +705,7 @@ const AiChatPage = () => {
                   {archivedConversations.length}
                 </Box>
                 <ChevronRightRoundedIcon
-                  sx={{ fontSize: 18, color: "rgba(var(--ov),0.4)", flexShrink: 0 }}
+                  sx={{ fontSize: 18, color: "var(--text-muted)", flexShrink: 0 }}
                 />
               </Box>
             )}
@@ -621,7 +716,7 @@ const AiChatPage = () => {
                   px: 2,
                   py: 3,
                   fontSize: 13,
-                  color: "rgba(var(--ov),0.45)",
+                  color: "var(--text-muted)",
                   fontStyle: "italic",
                   textAlign: "center",
                 }}
@@ -717,7 +812,7 @@ const AiChatPage = () => {
               <MenuRoundedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <AutoAwesomeRoundedIcon sx={{ color: "#a5b4fc" }} />
+          <AutoAwesomeRoundedIcon sx={{ color: "var(--accent-soft)" }} />
           <Typography
             variant="h6"
             sx={{ fontWeight: 600, fontSize: { xs: 16, md: 20 } }}
@@ -793,14 +888,133 @@ const AiChatPage = () => {
         >
           {historyLoading && (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
-              <CircularProgress size={22} sx={{ color: "#a5b4fc" }} />
+              <CircularProgress size={22} sx={{ color: "var(--accent-soft)" }} />
             </Box>
           )}
 
-          {!historyLoading && messages.length === 0 && !sending && (
+          {/* No key means every send would fail identically, so the page asks
+              for one here instead and keeps the composer disabled until it has
+              one. The key can be pasted inline — no trip to the Keys page. */}
+          {hasKey === false && (
+            <Paper
+              sx={{
+                maxWidth: 560,
+                mx: "auto",
+                mt: 5,
+                p: 3,
+                borderRadius: 3,
+                background: "rgba(var(--ov),0.04)",
+                border: "1px solid rgba(99,102,241,0.35)",
+                boxShadow: "none",
+                color: "var(--text)",
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
+                <VpnKeyRoundedIcon sx={{ color: "var(--accent-soft)" }} />
+                <Typography sx={{ fontWeight: 700, fontSize: 17 }}>
+                  Add your Groq API key to start chatting
+                </Typography>
+              </Stack>
+
+              <Typography
+                sx={{ fontSize: "0.9rem", color: "rgba(var(--ov),0.6)", mb: 2 }}
+              >
+                VaultGPT runs on your own Groq key, so your usage bills your
+                account and never anyone else's. It is free to create one.
+              </Typography>
+
+              <Stack component="ol" spacing={0.75} sx={{ pl: 2.5, m: 0, mb: 2 }}>
+                <Typography component="li" sx={{ fontSize: "0.88rem" }}>
+                  Open{" "}
+                  <Link
+                    href="https://console.groq.com/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ color: "var(--accent-soft)" }}
+                  >
+                    console.groq.com/keys
+                  </Link>{" "}
+                  and sign in.
+                </Typography>
+                <Typography component="li" sx={{ fontSize: "0.88rem" }}>
+                  Create an API key and copy it (it starts with{" "}
+                  <Box component="span" sx={{ fontFamily: "monospace" }}>
+                    gsk_
+                  </Box>
+                  ).
+                </Typography>
+                <Typography component="li" sx={{ fontSize: "0.88rem" }}>
+                  Paste it below and save — chat unlocks immediately.
+                </Typography>
+              </Stack>
+
+              <TextField
+                fullWidth
+                size="small"
+                type="password"
+                placeholder="gsk_…"
+                value={keyDraft}
+                onChange={(e) => {
+                  setKeyDraft(e.target.value);
+                  if (keyError) setKeyError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSaveKey();
+                  }
+                }}
+                autoComplete="off"
+                sx={{ mb: 1.5 }}
+              />
+
+              {keyError && (
+                <Typography sx={{ color: "var(--danger)", fontSize: 13, mb: 1.5 }}>
+                  {keyError}
+                </Typography>
+              )}
+
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Button
+                  onClick={handleSaveKey}
+                  disabled={savingKey || keyDraft.trim().length < 8}
+                  startIcon={
+                    savingKey ? (
+                      <CircularProgress size={14} sx={{ color: "#fff !important" }} />
+                    ) : (
+                      <VpnKeyRoundedIcon />
+                    )
+                  }
+                  sx={{
+                    borderRadius: "999px",
+                    textTransform: "none",
+                    color: "var(--text)",
+                    backgroundColor: "rgba(99,102,241,0.55)",
+                    px: 2.5,
+                    "&:hover": { backgroundColor: "rgba(99,102,241,0.8)" },
+                    "&.Mui-disabled": {
+                      color: "var(--text-muted)",
+                      backgroundColor: "rgba(var(--ov),0.05)",
+                    },
+                  }}
+                >
+                  {savingKey ? "Saving…" : "Save key & start chatting"}
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => navigate(KEYS_ROUTE)}
+                  sx={{ textTransform: "none", color: "rgba(var(--ov),0.6)" }}
+                >
+                  Manage keys
+                </Button>
+              </Stack>
+            </Paper>
+          )}
+
+          {hasKey === true && !historyLoading && messages.length === 0 && !sending && (
             <Typography
               sx={{
-                color: "rgba(var(--ov),0.5)",
+                color: "var(--text-muted)",
                 fontStyle: "italic",
                 textAlign: "center",
                 mt: 6,
@@ -821,9 +1035,9 @@ const AiChatPage = () => {
               messages[messages.length - 1].role === "assistant" &&
               !messages[messages.length - 1].content && (
                 <Stack direction="row" alignItems="center" spacing={1.5}>
-                  <CircularProgress size={16} sx={{ color: "#a5b4fc" }} />
+                  <CircularProgress size={16} sx={{ color: "var(--accent-soft)" }} />
                   <Typography
-                    sx={{ color: "rgba(var(--ov),0.55)", fontStyle: "italic" }}
+                    sx={{ color: "var(--text-muted)", fontStyle: "italic" }}
                   >
                     Thinking...
                   </Typography>
@@ -833,9 +1047,28 @@ const AiChatPage = () => {
         </Paper>
 
         {error && (
-          <Typography sx={{ color: "#ff8a80", mt: 1.5, fontSize: 14 }}>
-            {error}
-          </Typography>
+          <Box sx={{ mt: 1.5 }}>
+            <Typography sx={{ color: "var(--danger)", fontSize: 14 }}>
+              {error}
+            </Typography>
+            {errorNeedsKey && (
+              <Button
+                size="small"
+                onClick={() => navigate(KEYS_ROUTE)}
+                sx={{
+                  mt: 1,
+                  borderRadius: "999px",
+                  textTransform: "none",
+                  color: "var(--text)",
+                  backgroundColor: "rgba(99,102,241,0.35)",
+                  px: 2,
+                  "&:hover": { backgroundColor: "rgba(99,102,241,0.55)" },
+                }}
+              >
+                Add a provider key
+              </Button>
+            )}
+          </Box>
         )}
 
         <Box
@@ -858,11 +1091,15 @@ const AiChatPage = () => {
             multiline
             maxRows={8}
             variant="standard"
-            placeholder="Ask a question..."
+            placeholder={
+              hasKey === false
+                ? "Add a Groq API key above to start chatting"
+                : "Ask a question..."
+            }
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={sending}
+            disabled={sending || hasKey !== true}
             InputProps={{ disableUnderline: true }}
             sx={{
               "& .MuiInputBase-root": {
@@ -873,7 +1110,7 @@ const AiChatPage = () => {
                 alignItems: "flex-start",
               },
               "& .MuiInputBase-input::placeholder": {
-                color: "rgba(var(--ov),0.45)",
+                color: "var(--text-muted)",
                 opacity: 1,
               },
             }}
@@ -890,25 +1127,29 @@ const AiChatPage = () => {
           >
             <Box sx={{ flex: 1 }} />
 
-            <Tooltip title="AI model used for this chat">
-              <Chip
-                icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 16 }} />}
-                label={prettyModel(model)}
-                size="small"
-                sx={{
-                  maxWidth: { xs: 160, sm: "none" },
-                  color: "rgba(var(--ov),0.8)",
-                  backgroundColor: "rgba(var(--ov),0.06)",
-                  border: "1px solid rgba(var(--ov),0.1)",
-                  fontSize: 12,
-                  "& .MuiChip-icon": { color: "#a5b4fc", ml: 0.5 },
-                }}
-              />
-            </Tooltip>
+            {/* Only shown once a model has actually answered — the chain falls
+                through, so naming one before that would often be wrong. */}
+            {model && (
+              <Tooltip title={`Answered by ${model} (via Groq)`}>
+                <Chip
+                  icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 16 }} />}
+                  label={prettyModel(model)}
+                  size="small"
+                  sx={{
+                    maxWidth: { xs: 160, sm: "none" },
+                    color: "rgba(var(--ov),0.8)",
+                    backgroundColor: "rgba(var(--ov),0.06)",
+                    border: "1px solid rgba(var(--ov),0.1)",
+                    fontSize: 12,
+                    "& .MuiChip-icon": { color: "var(--accent-soft)", ml: 0.5 },
+                  }}
+                />
+              </Tooltip>
+            )}
 
             <IconButton
               onClick={handleSend}
-              disabled={sending || !draft.trim()}
+              disabled={sending || !draft.trim() || hasKey !== true}
               aria-label="Send message"
               sx={{
                 width: 40,
@@ -917,7 +1158,7 @@ const AiChatPage = () => {
                 color: "var(--text)",
                 "&:hover": { backgroundColor: "rgba(99,102,241,0.8)" },
                 "&.Mui-disabled": {
-                  color: "rgba(var(--ov),0.3)",
+                  color: "var(--text-muted)",
                   backgroundColor: "rgba(var(--ov),0.04)",
                 },
               }}
@@ -944,7 +1185,6 @@ const AiChatPage = () => {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         PaperProps={{
           sx: {
-            background: "var(--surface)",
             color: "var(--text)",
             borderRadius: 2,
             minWidth: 184,
@@ -1025,7 +1265,6 @@ const AiChatPage = () => {
         }}
         PaperProps={{
           sx: {
-            background: "var(--surface)",
             color: "var(--text)",
             borderRadius: 3,
             minWidth: { xs: "auto", sm: 420 },
@@ -1089,7 +1328,7 @@ const AiChatPage = () => {
                 px: 2.5,
                 "&:hover": { backgroundColor: "rgba(99,102,241,0.8)" },
                 "&.Mui-disabled": {
-                  color: "rgba(var(--ov),0.4)",
+                  color: "var(--text-muted)",
                   backgroundColor: "rgba(var(--ov),0.05)",
                 },
               }}
@@ -1112,7 +1351,6 @@ const AiChatPage = () => {
         }}
         PaperProps={{
           sx: {
-            background: "var(--surface)",
             color: "var(--text)",
             borderRadius: 3,
             minWidth: { xs: "auto", sm: 440 },
@@ -1154,7 +1392,7 @@ const AiChatPage = () => {
                 px: 2.5,
                 "&:hover": { backgroundColor: "rgba(239,68,68,1)" },
                 "&.Mui-disabled": {
-                  color: "rgba(var(--ov),0.5)",
+                  color: "var(--text-muted)",
                   backgroundColor: "rgba(239,68,68,0.35)",
                 },
               }}
@@ -1198,7 +1436,7 @@ const MarkdownContent = ({ text }) => (
       "& h4": { fontSize: "1rem" },
       "& ul, & ol": { pl: 3, my: 1 },
       "& li": { mb: 0.5 },
-      "& a": { color: "#a5b4fc", textDecoration: "underline" },
+      "& a": { color: "var(--accent-soft)", textDecoration: "underline" },
       "& strong": { fontWeight: 700 },
       "& hr": {
         border: "none",
@@ -1364,6 +1602,71 @@ const MessageBubble = ({ message }) => {
               ))}
             </Stack>
           )}
+
+        {/* Relationships drawn from the knowledge graph. Teal, to match the
+            Ask tab, and distinct from the green note citations — the two
+            namespaces must never look interchangeable. */}
+        {!isUser && message.graphFacts?.length > 0 && (
+          <Stack
+            direction="row"
+            spacing={0.75}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{ mt: 1.5, gap: 0.75 }}
+          >
+            {message.graphFacts.map((fact) => (
+              <Tooltip
+                key={fact.n}
+                arrow
+                title={`From ${fact.supportCount} note${fact.supportCount === 1 ? "" : "s"} in your vault`}
+              >
+                <Chip
+                  size="small"
+                  label={`[G${fact.n}] ${fact.statement}`}
+                  onClick={() =>
+                    fact.noteIds?.[0] &&
+                    navigate(
+                      `/dashboard/create-note?noteId=${encodeURIComponent(fact.noteIds[0])}`,
+                    )
+                  }
+                  sx={{
+                    color: "var(--text)",
+                    backgroundColor: "rgba(45,212,191,0.18)",
+                    border: "1px solid rgba(45,212,191,0.35)",
+                    cursor: fact.noteIds?.length ? "pointer" : "default",
+                    "&:hover": { backgroundColor: "rgba(45,212,191,0.3)" },
+                  }}
+                />
+              </Tooltip>
+            ))}
+          </Stack>
+        )}
+
+        {/* Memory shapes a reply invisibly otherwise. An assistant that acts
+            on something it believes about you without ever saying so is one
+            you have no way to correct — so when the memory block reached the
+            model, the reply says so and links to where you can edit it. */}
+        {!isUser && message.contextUsed?.memory && (
+          <Chip
+            size="small"
+            label={
+              message.contextUsed.memoryCount
+                ? `informed by ${message.contextUsed.memoryCount} thing${
+                    message.contextUsed.memoryCount === 1 ? "" : "s"
+                  } it remembers about you`
+                : "informed by what it remembers about you"
+            }
+            onClick={() => navigate("/dashboard/memory")}
+            sx={{
+              mt: 1.5,
+              cursor: "pointer",
+              color: "var(--text)",
+              backgroundColor: "rgba(129,140,248,0.18)",
+              border: "1px solid rgba(129,140,248,0.35)",
+              "&:hover": { backgroundColor: "rgba(129,140,248,0.3)" },
+            }}
+          />
+        )}
       </Box>
     </Stack>
   );

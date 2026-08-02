@@ -187,7 +187,6 @@ export default function ToolbarSection({
             paper: {
               sx: {
                 mt: 0.5,
-                background: "var(--surface)",
                 color: "var(--text)",
                 border: "1px solid rgba(var(--ov),0.10)",
                 borderRadius: 2,
@@ -236,7 +235,13 @@ export default function ToolbarSection({
               mr: { xs: 0, sm: 1 },
             },
             "&:hover": {
-              backgroundColor: "#e8ecf7",
+              // The button inverts the theme on purpose (`--text` background,
+              // `--bg` label). The hover therefore has to stay a shade of
+              // `--text` — it was pinned to a near-white grey, which in light
+              // mode flipped the button from near-black to near-white and took
+              // its near-white label with it.
+              backgroundColor: "var(--text)",
+              opacity: 0.86,
               boxShadow: "none",
             },
           }}

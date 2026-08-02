@@ -1,30 +1,45 @@
+import { useState } from "react";
 import {
   Box,
   Button,
-  CardContent,
   Checkbox,
-  Divider,
-  TextField,
-  Typography,
+  CircularProgress,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
   Link,
   Stack,
-  Paper,
+  TextField,
+  Typography,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import { Link as RouterLink } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import GoogleIcon from "@mui/icons-material/Google";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
+
 import { authBaseUrl } from "../utils/url.js";
 import { authentication } from "../utils/configEnv.js";
 import { loginService } from "../store/services/LoginService.js";
 import { get2FAStatusService } from "../store/services/AuthService.js";
-import GoogleIcon from "@mui/icons-material/Google";
-import GitHubIcon from "@mui/icons-material/GitHub";
+import AuthShell, {
+  AuthDivider,
+  AuthError,
+  authFieldSx,
+  authPrimaryButtonSx,
+  authProviderButtonSx,
+} from "./AuthShell";
 
 const Login = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -34,6 +49,13 @@ const Login = () => {
       password: data.get("password"),
     };
 
+    if (!credentials.username || !credentials.password) {
+      setError("Please enter both your username and password.");
+      return;
+    }
+
+    setError("");
+    setSubmitting(true);
     try {
       const res = await loginService(credentials);
       localStorage.setItem("JWT_TOKEN", res.data.jwtToken);
@@ -57,190 +79,169 @@ const Login = () => {
         navigate("/dashboard");
       }
     } catch (err) {
-      if (err?.response?.status === 401) {
-        enqueueSnackbar(err.response.data.message, { variant: "error" });
-      } else {
-        enqueueSnackbar("Login failed. Please try again.", {
-          variant: "error",
-        });
-      }
+      const message =
+        err?.response?.status === 401
+          ? err.response.data?.message || "Incorrect username or password."
+          : "Login failed. Please try again.";
+      // Shown inline as well as in the snackbar: a toast that has already
+      // faded leaves the user staring at a form with no reason for the
+      // failure still on screen.
+      setError(message);
+      enqueueSnackbar(message, { variant: "error" });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        // backgroundColor: "#0a1a2f",
-      }}
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to your vault to pick up where you left off."
+      footer={
+        <Typography sx={{ fontSize: 13, color: "var(--text-2)" }}>
+          Don&apos;t have an account?{" "}
+          <Link
+            component={RouterLink}
+            to="/signUp"
+            sx={{
+              color: "var(--accent-soft)",
+              fontWeight: 600,
+              textDecoration: "none",
+              "&:hover": { textDecoration: "underline" },
+            }}
+          >
+            Create one, it&apos;s free
+          </Link>
+        </Typography>
+      }
     >
-      <Paper
-        elevation={8} // max elevation for a strong shadow
-        sx={{
-          borderRadius: "24px",
-          boxShadow: "0 20px 60px rgb(0, 0, 0)",
-          background: "rgba(255, 255, 255, 0.67)",
-          maxWidth: 520,
-          width: "100%",
-          p: 3,
-        }}
-      >
-        <CardContent>
-          <Typography
-            variant="h4"
-            align="center"
-            sx={{ fontWeight: 700, mb: 1 }}
-          >
-            Welcome back
-          </Typography>
-          <Typography align="center" sx={{ mb: 3, color: "text.secondary" }}>
-            Please enter your username and password
-          </Typography>
+      <Stack direction="row" spacing={1.5} sx={{ mb: 0.5 }}>
+        <Button
+          variant="contained"
+          startIcon={<GoogleIcon />}
+          component="a"
+          href={`${authBaseUrl}${authentication}/oauth2/authorization/google`}
+          sx={authProviderButtonSx}
+        >
+          Google
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<GitHubIcon />}
+          component="a"
+          href={`${authBaseUrl}${authentication}/oauth2/authorization/github`}
+          sx={authProviderButtonSx}
+        >
+          GitHub
+        </Button>
+      </Stack>
 
-          {/* OAuth Buttons */}
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="center"
-            sx={{ mb: 2 }}
-          >
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<GoogleIcon />}
-              component="a"
-              href={`${authBaseUrl}${authentication}/oauth2/authorization/google`}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                borderRadius: 3,
-                color: "#000",
-                bgcolor: "#ffffff00",
-                "&:hover": { bgcolor: "#b3b0b0" },
-              }}
-            >
-              Google
-            </Button>
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<GitHubIcon />}
-              component="a"
-              href={`${authBaseUrl}${authentication}/oauth2/authorization/github`}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                borderRadius: 3,
-                color: "#000",
-                bgcolor: "#ffffff04",
-                "&:hover": { bgcolor: "#b3b0b0" },
-              }}
-            >
-              GitHub
-            </Button>
-          </Stack>
+      <AuthDivider label="or continue with" />
 
-          <Divider sx={{ my: 2, fontWeight: "bold" }}>Or</Divider>
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <Stack spacing={2}>
+          <TextField
+            fullWidth
+            id="username"
+            name="username"
+            label="Username"
+            autoComplete="username"
+            autoFocus
+            sx={authFieldSx}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <PersonOutlineOutlinedIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
 
-          {/* Form */}
-          <Box component="form" onSubmit={handleSubmit} noValidate>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="username"
-              label="Username"
-              name="username"
-              autoFocus
-              InputProps={{
-                startAdornment: <PersonOutlineOutlinedIcon sx={{ mr: 1 }} />,
-              }}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              InputProps={{
-                startAdornment: <LockOutlinedIcon sx={{ mr: 1 }} />,
-              }}
-            />
+          <TextField
+            fullWidth
+            id="password"
+            name="password"
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            sx={authFieldSx}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlinedIcon fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword((v) => !v)}
+                    edge="end"
+                    size="small"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    sx={{ color: "var(--icon-muted)" }}
+                  >
+                    {showPassword ? (
+                      <VisibilityOffOutlinedIcon fontSize="small" />
+                    ) : (
+                      <VisibilityOutlinedIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Stack>
 
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mt: 1 }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", mt: 1 }}>
-                <Checkbox
-                  size="small"
-                  name="agree"
-                  sx={{
-                    mr: 1,
-                    color: "rgba(0,0,0,0.7)",
-                    "&.Mui-checked": {
-                      color: "#6C63FF",
-                    },
-                  }}
-                />
-                <Typography sx={{ color: "#000", userSelect: "none" }}>
-                  Remember me
-                </Typography>
-                <Link href="#" variant="body2" sx={{ ml: "auto"}}>
-                  Forgot password?
-                </Link>
-              </Box>
-            </Stack>
+        <AuthError>{error}</AuthError>
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="secondary"
-              sx={{
-                backgroundColor: "#f45b78",
-                borderRadius: 10,
-                mt: 1,
-                py: 1.3,
-                textTransform: "none",
-                fontSize: "16px",
-                "&:hover": {
-                  backgroundColor: "#db3856",
-                },
-              }}
-            >
-              Login
-            </Button>
-
-            <Typography align="center" variant="body2" sx={{ mt: 1.3 }}>
-              or{" "}
-              <Link
-                component={RouterLink}
-                to="/signUp"
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mt: 1, mb: 2.5 }}
+        >
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                name="remember"
                 sx={{
-                  color: "#df2626",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                  "&:hover": {
-                    color: "#6C63FF",
-                    textDecoration: "underline",
-                  },
+                  color: "var(--icon-muted)",
+                  "&.Mui-checked": { color: "var(--accent)" },
                 }}
-              >
-                Register!
-              </Link>
-            </Typography>
-          </Box>
-        </CardContent>
-      </Paper>
-    </Box>
+              />
+            }
+            label={
+              <Typography sx={{ fontSize: 13, color: "var(--text-2)" }}>
+                Remember me
+              </Typography>
+            }
+          />
+          <Link
+            href="#"
+            sx={{
+              fontSize: 13,
+              color: "var(--text-2)",
+              textDecoration: "none",
+              "&:hover": { color: "var(--accent-soft)", textDecoration: "underline" },
+            }}
+          >
+            Forgot password?
+          </Link>
+        </Stack>
+
+        <Button type="submit" disabled={submitting} sx={authPrimaryButtonSx}>
+          {submitting ? (
+            <>
+              <CircularProgress size={16} sx={{ color: "#fff !important", mr: 1 }} />
+              Signing in…
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </Button>
+      </Box>
+    </AuthShell>
   );
 };
 

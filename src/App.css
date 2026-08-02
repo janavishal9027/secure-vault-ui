@@ -36,3 +36,203 @@
     transform: rotate(360deg);
   }
 }
+
+
+/* ─── React Quill Editor – Dark Theme Overrides ─── */
+.quill {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+  height: 100%;
+}
+
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid rgba(var(--ov), 0.1) !important;
+  border-radius: 0;
+  background: var(--surface) !important;
+  padding: 8px 0 !important;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.ql-toolbar.ql-snow .ql-stroke {
+  stroke: rgba(var(--ov), 0.7) !important;
+}
+
+.ql-toolbar.ql-snow .ql-fill {
+  fill: rgba(var(--ov), 0.7) !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label {
+  color: rgba(var(--ov), 0.8) !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker-options {
+  background: var(--surface, #1e1e2e) !important;
+  border: 1px solid rgba(var(--ov), 0.15) !important;
+  border-radius: 8px;
+}
+
+.ql-toolbar.ql-snow .ql-picker-item {
+  color: rgba(var(--ov), 0.8) !important;
+}
+
+.ql-toolbar.ql-snow button:hover,
+.ql-toolbar.ql-snow button.ql-active,
+.ql-toolbar.ql-snow .ql-picker-label:hover,
+.ql-toolbar.ql-snow .ql-picker-label.ql-active {
+  color: var(--accent-soft) !important;
+}
+
+.ql-toolbar.ql-snow button:hover .ql-stroke,
+.ql-toolbar.ql-snow button.ql-active .ql-stroke {
+  stroke: var(--accent-soft) !important;
+}
+
+.ql-toolbar.ql-snow button:hover .ql-fill,
+.ql-toolbar.ql-snow button.ql-active .ql-fill {
+  fill: var(--accent-soft) !important;
+}
+
+.ql-container.ql-snow {
+  border: none !important;
+  border-radius: 0 0 12px 12px;
+  font-size: 1rem;
+  min-height: 350px;
+  background: transparent !important;
+}
+
+@media (max-width: 600px) {
+  .ql-container.ql-snow {
+    min-height: 250px;
+    font-size: 0.9rem;
+  }
+
+  .ql-toolbar.ql-snow {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+
+  .ql-toolbar.ql-snow .ql-formats {
+    margin-right: 4px !important;
+  }
+}
+
+.ql-editor {
+  color: rgba(var(--ov), 0.92) !important;
+  background: transparent !important;
+  line-height: 1.9;
+  min-height: 350px;
+  font-family: inherit;
+  padding: 16px 0 !important;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.ql-editor * {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+.ql-editor pre.ql-syntax,
+.ql-editor pre.ql-syntax * {
+  background-color: #1e1e2e !important;
+  border: none !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.ql-editor pre.ql-syntax {
+  border: 1px solid rgba(var(--ov), 0.1) !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: rgba(var(--ov), 0.4) !important;
+  font-style: italic;
+}
+
+.ql-editor h1,
+.ql-editor h2,
+.ql-editor h3 {
+  color: rgba(var(--ov), 0.95) !important;
+}
+
+.ql-editor a {
+  color: var(--accent-soft) !important;
+}
+
+.ql-editor blockquote {
+  border-left: 4px solid rgba(99, 102, 241, 0.5);
+  padding-left: 1em;
+  color: rgba(var(--ov), 0.7);
+}
+
+.ql-editor pre.ql-syntax {
+  background: #1e1e2e !important;
+  color: #abb2bf !important;
+  border-radius: 10px;
+  padding: 1.2em;
+  font-family: "Fira Code", "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  border: 1px solid rgba(var(--ov), 0.1);
+  margin: 1em 0;
+  tab-size: 4;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.ql-snow .ql-tooltip {
+  background: var(--surface, #1e1e2e) !important;
+  border: 1px solid rgba(var(--ov), 0.15) !important;
+  color: rgba(var(--ov), 0.85) !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.ql-snow .ql-tooltip input[type="text"] {
+  background: rgba(var(--ov), 0.06) !important;
+  border: 1px solid rgba(var(--ov), 0.2) !important;
+  color: rgba(var(--ov), 0.9) !important;
+  border-radius: 4px;
+}
+
+
+/* ─── Quill Code Block Language Selector ─── */
+.ql-snow .ql-syntax-select,
+.ql-snow select.ql-syntax-select,
+.ql-snow .ql-code-block-container select {
+  background: #1e1e2e !important;
+  color: rgba(var(--ov), 0.85) !important;
+  border: 1px solid rgba(var(--ov), 0.15) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  font-size: 0.8rem !important;
+  outline: none !important;
+  cursor: pointer;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ql-snow .ql-syntax-select option,
+.ql-snow select.ql-syntax-select option,
+.ql-snow .ql-code-block-container select option {
+  background: #1e1e2e !important;
+  color: rgba(var(--ov), 0.85) !important;
+  padding: 4px 8px;
+}
+
+.ql-snow .ql-code-block-container {
+  position: relative;
+}

@@ -15,13 +15,22 @@ import {
 import { useState } from "react";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import VpnKeyRoundedIcon from "@mui/icons-material/VpnKeyRounded";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
+import AccountTreeRoundedIcon from "@mui/icons-material/AccountTreeRounded";
+import PsychologyRoundedIcon from "@mui/icons-material/PsychologyRounded";
+import LayersRoundedIcon from "@mui/icons-material/LayersRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import { useNavigate } from "react-router-dom";
 
 import { useThemeMode } from "../theme/ThemeModeContext";
+import {
+  clearCachedProfile,
+  initialsFor,
+  useMyProfile,
+} from "../store/useMyProfile";
 
 // VaultGPT button — solid dark blue with white text/icon (fixed in both themes).
 const vaultGptButtonSx = {
@@ -61,6 +70,7 @@ export default function TopBar() {
   const navigate = useNavigate();
   const { mode, toggleMode } = useThemeMode();
   const [profileAnchor, setProfileAnchor] = useState(null);
+  const profile = useMyProfile();
 
   // Buttons collapse to icon-only on screens narrower than `sm` (600px).
   const showLabels = { xs: "none", sm: "inline-flex" };
@@ -71,7 +81,17 @@ export default function TopBar() {
 
   const handleSettings = () => {
     closeProfileMenu();
-    navigate("/dashboard/2fa-settings");
+    navigate("/dashboard/settings");
+  };
+
+  const handleKeys = () => {
+    closeProfileMenu();
+    navigate("/dashboard/keys");
+  };
+
+  const go = (path) => () => {
+    closeProfileMenu();
+    navigate(path);
   };
 
   const handleLogout = () => {
@@ -81,6 +101,10 @@ export default function TopBar() {
     // Legacy keys set by some flows — clear them too, just in case.
     localStorage.removeItem("token");
     localStorage.removeItem("roles");
+    // The profile cache is module-level and outlives the route change — without
+    // this, the next person to sign in on this machine briefly sees the
+    // previous user's name and picture in the header.
+    clearCachedProfile();
     navigate("/login");
   };
 
@@ -160,6 +184,8 @@ export default function TopBar() {
             sx={{ p: 0.25, ml: { xs: 0.25, sm: 0.5 } }}
           >
             <Avatar
+              src={profile?.avatarUrl || undefined}
+              alt={profile?.displayName || profile?.username || "Account"}
               sx={{
                 width: { xs: 32, md: 38 },
                 height: { xs: 32, md: 38 },
@@ -168,7 +194,7 @@ export default function TopBar() {
                 fontWeight: 700,
               }}
             >
-              V
+              {initialsFor(profile)}
             </Avatar>
           </IconButton>
         </Tooltip>
@@ -183,7 +209,6 @@ export default function TopBar() {
             sx: {
               mt: 1,
               minWidth: 180,
-              background: "var(--surface)",
               color: "var(--text)",
               borderRadius: 2,
               border: "1px solid rgba(var(--ov),0.08)",
@@ -213,6 +238,39 @@ export default function TopBar() {
           </MenuItem>
 
           <Divider sx={{ borderColor: "rgba(var(--ov),0.08)", my: 0.5 }} />
+
+          {/* The three AI surfaces. Grouped together and above the account
+              items, because they are things you *look at* rather than settings
+              you change. */}
+          <MenuItem onClick={go("/dashboard/graph")}>
+            <ListItemIcon>
+              <AccountTreeRoundedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Knowledge graph</ListItemText>
+          </MenuItem>
+
+          <MenuItem onClick={go("/dashboard/memory")}>
+            <ListItemIcon>
+              <PsychologyRoundedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Memory</ListItemText>
+          </MenuItem>
+
+          <MenuItem onClick={go("/dashboard/processing")}>
+            <ListItemIcon>
+              <LayersRoundedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Processing</ListItemText>
+          </MenuItem>
+
+          <Divider sx={{ borderColor: "rgba(var(--ov),0.08)", my: 0.5 }} />
+
+          <MenuItem onClick={handleKeys}>
+            <ListItemIcon>
+              <VpnKeyRoundedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>AI provider keys</ListItemText>
+          </MenuItem>
 
           <MenuItem onClick={handleSettings}>
             <ListItemIcon>

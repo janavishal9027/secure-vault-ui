@@ -1,0 +1,300 @@
+/* App-specific adjustments to the ported landing design.
+ *
+ * Kept separate from landing.css because that file is generated from the Figma
+ * export — re-running the port overwrites it, and anything edited there would
+ * be lost without warning. This file is hand-written and survives.
+ *
+ * Loaded after landing.css, so equal-specificity rules here win.
+ */
+
+/* ===== Landing palette =====
+ *
+ * `landing.css` refers to colour only through these tokens; the port script
+ * rewrites the design's 132 hardcoded literals into them. The dark set below
+ * reproduces the Figma design exactly, value for value — dark mode looks
+ * precisely as designed.
+ *
+ * Light mode is a designed palette, not an inversion. Flipping a glass-on-navy
+ * design mechanically gives muddy grey panels and pale accents nobody can
+ * read: the design's aqua (#78ebea) measures 1.4:1 on white. Each light value
+ * is the same hue taken to the lightness a light surface needs, and every
+ * text/surface pair clears 4.5:1 — asserted in landing.test.js rather than
+ * eyeballed.
+ */
+.landing-root {
+  /* --- dark: the design's own values --- */
+  --l-bg: #03051c;
+  --l-bg-2: #0a0d3d;
+  --l-bg-3: #060829;
+  --l-surface-solid: #111443;
+
+  --l-text: #f7f8ff;
+  --l-text-2: #aeb2cf;
+  --l-text-muted: #9096b6;
+
+  --l-aqua: #78ebea;
+  --l-violet: #9c96ff;
+  --l-gold: #ffc75b;
+  --l-rose: #ff8aa0;
+
+  /* Overlay triplet — borders and inner highlights. White over a dark page. */
+  --l-ov: 255, 255, 255;
+  --l-shadow: 0, 0, 0;
+
+  /* Glass fills, per surface. Two stops each, as the design's gradients. */
+  --l-glass-1: rgba(30, 34, 90, 0.55);
+  --l-glass-2: rgba(13, 16, 60, 0.47);
+  /* Denser than the design's 0.72/0.44 on purpose: the header is fixed here
+     and the design's was not, so content now scrolls continuously behind it.
+     At the original alpha a bright card passing underneath showed through as
+     a smear rather than reading as frosted glass. */
+  --l-nav-1: rgba(17, 21, 68, 0.86);
+  --l-nav-2: rgba(19, 25, 71, 0.66);
+  --l-footer-1: rgba(38, 43, 100, 0.4);
+  --l-footer-2: rgba(13, 17, 57, 0.6);
+  --l-panel-1: rgba(43, 41, 113, 0.5);
+  --l-panel-2: rgba(6, 9, 36, 0.35);
+  --l-voice-1: rgba(16, 44, 84, 0.9);
+  --l-voice-2: rgba(12, 16, 54, 0.75);
+  --l-float: rgba(18, 23, 71, 0.82);
+}
+
+:root[data-theme="light"] .landing-root {
+  --l-bg: #f4f6fd;
+  --l-bg-2: #e8ecfa;
+  --l-bg-3: #dfe4f6;
+  --l-surface-solid: #ffffff;
+
+  --l-text: #0d1030;
+  --l-text-2: #3b4166;
+  --l-text-muted: #545a7c;
+
+  /* Same hues, taken down to where they hold 4.5:1 on a light surface. The
+     design's originals measure 1.4–2.0:1 here. */
+  --l-aqua: #0a6360;
+  --l-violet: #4f46e5;
+  --l-gold: #7a4f00;
+  --l-rose: #b3283f;
+
+  /* The overlay inverts: hairlines become dark slate over a light page. */
+  --l-ov: 17, 24, 39;
+  --l-shadow: 15, 23, 42;
+
+  /* Glass becomes white-over-page rather than navy-over-page. The alphas stay
+     high: a lightly-tinted panel on a light background has no edge at all. */
+  --l-glass-1: rgba(255, 255, 255, 0.78);
+  --l-glass-2: rgba(255, 255, 255, 0.62);
+  --l-nav-1: rgba(255, 255, 255, 0.86);
+  --l-nav-2: rgba(255, 255, 255, 0.70);
+  --l-footer-1: rgba(255, 255, 255, 0.76);
+  --l-footer-2: rgba(255, 255, 255, 0.62);
+  --l-panel-1: rgba(228, 230, 251, 0.85);
+  --l-panel-2: rgba(255, 255, 255, 0.45);
+  --l-voice-1: rgba(219, 231, 251, 0.92);
+  --l-voice-2: rgba(255, 255, 255, 0.72);
+  --l-float: rgba(255, 255, 255, 0.94);
+}
+
+/* The headline highlight is a gradient on `em`. Its dark-mode pair is a pale
+   lavender-to-aqua that vanishes on a light background, so light mode gets the
+   same gradient at readable lightness. */
+:root[data-theme="light"] .landing-root em {
+  background: linear-gradient(110deg, #4f46e5, #0a6360);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* The hero's app-window is a depiction of a screen. A product shot that
+   inverts with the site stops reading as a screenshot, so it stays dark in
+   both modes — which also keeps its own internal contrast exactly as designed.
+   Its fills are excluded from the port's colour map; these re-pin the text
+   that would otherwise follow the page. */
+:root[data-theme="light"] .landing-root .app-window {
+  --l-text: #fbfbff;
+  --l-text-2: #aeb4d0;
+  --l-text-muted: #8b91b4;
+  --l-aqua: #78ebea;
+  --l-violet: #bdb6ff;
+  --l-ov: 255, 255, 255;
+  --l-shadow: 0, 0, 0;
+}
+
+/* ===== Content width =====
+ *
+ * The design caps its container at 1160px. That was chosen against a preview
+ * pane; on a 1920px display it leaves roughly 380px of dead gutter on each
+ * side, and the hero's two columns get squeezed while the page around them
+ * sits empty.
+ *
+ * 1440px is the widest this can go before the feature row's four cards start
+ * looking sparse rather than generous. Prose is unaffected either way — `.lead`
+ * and the section intros cap their own line length independently, so widening
+ * the shell stretches the layout, not the reading measure.
+ *
+ * One number to tune: raise it for a fuller page, lower it for a tighter one.
+ */
+.landing-root .shell,
+.landing-root .nav {
+  width: min(1440px, calc(100% - 56px));
+}
+
+/* The gutter is the other half of the same decision. Below 1440px the shell is
+   already full-bleed minus this padding, so trimming it buys real width back on
+   laptops — where the squeeze is worst — without touching wide screens. */
+@media (max-width: 1200px) {
+  .landing-root .shell,
+  .landing-root .nav {
+    width: min(1440px, calc(100% - 40px));
+  }
+}
+
+/* Wide screens can carry a longer hero measure, but only up to a point: past
+   ~620px the lead paragraph runs to a line length that is tiring to read. */
+@media (min-width: 1300px) {
+  .landing-root .lead {
+    max-width: 560px;
+  }
+}
+
+/* ===== Fixed header =====
+ *
+ * The design's header scrolls away with the page. Pinning it keeps navigation
+ * reachable from anywhere, which matters here because the page is long and the
+ * only other way back is the footer's "back to top".
+ *
+ * Going fixed takes the header out of normal flow, so the hero would slide up
+ * underneath it — hence the matching top padding below. The two numbers are
+ * paired: change the header height and the hero padding has to follow.
+ */
+.landing-root {
+  /* The header's total footprint: its own top padding plus the nav's height.
+     Declared as a variable because the hero's top padding has to clear it, and
+     two hardcoded numbers in different rules drift apart the moment either
+     changes. The design shrinks both below 580px, so this does too. */
+  --landing-header-h: 75px; /* 17px padding + 58px nav */
+}
+
+.landing-root .site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+}
+
+/* Clears the fixed header, then adds the hero's own breathing room. The design
+   sets that to 42px normally and 65px below 900px — both preserved here. */
+.landing-root .hero {
+  padding-top: calc(var(--landing-header-h) + 42px);
+}
+
+/* The nav's opacity is set on --l-nav-1/2 in the palette above, not here.
+   It was briefly a hardcoded navy gradient at this spot, which — loading after
+   landing.css — silently beat the tokens and left the header dark in light
+   mode. A literal colour in this file defeats the whole theming layer. */
+
+/* ===== Header auth buttons: hidden until the hero's pair scrolls away =====
+ *
+ * The hero already offers "Get started free" and "Log in". Showing the same
+ * two in the header at the same moment asks the same question twice.
+ *
+ * Hidden with opacity + visibility rather than `display: none` so the nav does
+ * not reflow when they appear — the brand stays put and the centred links stay
+ * centred. `visibility` is what keeps them out of the accessibility tree;
+ * `inert` in the JSX keeps them out of the tab order.
+ */
+.landing-root .nav-actions {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease,
+    visibility 0.24s;
+}
+
+.landing-root .site-header.auth-visible .nav-actions {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .nav-actions {
+    transition: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Below 900px the design hides `.nav-actions` entirely and moves both links
+     into the drawer, which is reachable at any scroll position — so there is
+     nothing to reveal here, only the taller hero padding to clear. */
+  .landing-root .hero {
+    padding-top: calc(var(--landing-header-h) + 65px);
+  }
+}
+
+@media (max-width: 580px) {
+  /* The design shrinks the header here: 10px padding + 54px nav. */
+  .landing-root {
+    --landing-header-h: 64px;
+  }
+}
+
+/* ===== Mode toggle =====
+ *
+ * `margin-left: auto` is what holds the nav together: the design's layout
+ * relies on `justify-content: space-between` with the centre links absolutely
+ * positioned, so a new flex child would otherwise be distributed into the
+ * middle. Pushing it right keeps the brand left and the actions right, exactly
+ * as designed, whether or not the auth pair is currently visible.
+ */
+.landing-root .theme-toggle {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 9px;
+  border: 1px solid rgba(var(--l-ov), 0.16);
+  background: rgba(var(--l-ov), 0.05);
+  color: var(--l-text-2);
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.landing-root .theme-toggle svg {
+  width: 17px;
+  height: 17px;
+}
+
+.landing-root .theme-toggle:hover {
+  color: var(--l-text);
+  background: rgba(var(--l-ov), 0.1);
+  border-color: rgba(var(--l-ov), 0.28);
+}
+
+.landing-root .theme-toggle:focus-visible {
+  outline: 2px solid var(--l-aqua);
+  outline-offset: 2px;
+}
+
+/* The auth pair sits to the right of the toggle, so it must not also claim the
+   auto margin — otherwise the two fight and the toggle drifts back to centre. */
+.landing-root .nav-actions {
+  margin-left: 19px;
+}
+
+@media (max-width: 900px) {
+  /* The design hides `.nav-actions` here and moves those links into the
+     drawer. The toggle stays: it belongs beside the hamburger, not buried in
+     a menu, and it is the only route to light mode. */
+  .landing-root .theme-toggle {
+    margin-right: 10px;
+  }
+}

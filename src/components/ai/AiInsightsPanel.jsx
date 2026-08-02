@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Box,
-  Button,
   Chip,
   CircularProgress,
   Divider,
@@ -9,68 +8,23 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
-import LocalOfferRoundedIcon from "@mui/icons-material/LocalOfferRounded";
 import LightbulbRoundedIcon from "@mui/icons-material/LightbulbRounded";
-
-import {
-  aiRecommendationsService,
-  aiTagsService,
-} from "../store/services/AiCoreService";
-import { updateNote } from "../store/actions/notesAction";
-
-const TAG_MIN_CONTENT_CHARS = 30;
+import { aiRecommendationsService } from "../store/services/AiCoreService";
+import { describeAiError } from "../utils/aiErrors";
+import NoteEntities from "./NoteEntities";
 
 const AiInsightsPanel = ({ note }) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { notes = [] } = useSelector((state) => state.notesState);
+
+  // Set of existing noteIds to filter out deleted notes from recommendations
+  const existingNoteIds = new Set(
+    notes.map((n) => n.noteId || n.id).filter(Boolean),
+  );
 
   const noteId = note?.noteId || note?.id;
-  const title = note?.title || "";
-  const content = note?.content || "";
-  const noteTags = (note?.tags || "")
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
-
-  const [tagsLoading, setTagsLoading] = useState(false);
-  const [tagsError, setTagsError] = useState("");
-  const [suggestedTags, setSuggestedTags] = useState([]);
-
-  useEffect(() => {
-    setSuggestedTags(noteTags);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noteId, note?.tags]);
-
-  const selectedTagSet = new Set(noteTags);
-
-  const persistTags = (tags) =>
-    dispatch(
-      updateNote(noteId, {
-        title,
-        content,
-        tags: tags.join(","),
-      }),
-    );
-
-  const handleToggleTag = (tag) => {
-    if (!noteId) return;
-    const nextSelected = selectedTagSet.has(tag)
-      ? noteTags.filter((t) => t !== tag)
-      : [...noteTags, tag];
-    persistTags(nextSelected);
-  };
-
-  const handleRemoveTag = (tag) => {
-    if (!noteId) return;
-    setSuggestedTags((prev) => prev.filter((t) => t !== tag));
-    if (selectedTagSet.has(tag)) {
-      persistTags(noteTags.filter((t) => t !== tag));
-    }
-  };
-
   const [related, setRelated] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [relatedError, setRelatedError] = useState("");
@@ -83,16 +37,47 @@ const AiInsightsPanel = ({ note }) => {
     aiRecommendationsService(noteId, 5)
       .then((response) => {
         if (cancelled) return;
-        setRelated(response.data?.related || []);
+        const data = response.data;
+        // Support both array response and object with related/recommendations key
+        const raw = Array.isArray(data)
+          ? data
+          : data?.related || data?.recommendations || [];
+
+        // Helper to extract note identifier from a hit (backend may use different field names)
+        const getNoteId = (hit) => hit.noteId || hit.note_id || hit.id;
+
+        // Minimum relevance score to consider a note as truly related
+        const RELEVANCE_THRESHOLD = 0.75;
+
+        // Exclude the current note and deduplicate by title (keep highest score)
+        // Notes with the same title are treated as duplicates (stale embeddings)
+        const uniqueMap = new Map();
+        raw
+          .filter((hit) => {
+            const hitId = getNoteId(hit);
+            // Exclude current note, notes that no longer exist, and low-relevance matches
+            return (
+              hitId !== noteId &&
+              existingNoteIds.has(hitId) &&
+              (hit.score || 0) >= RELEVANCE_THRESHOLD
+            );
+          })
+          .forEach((hit) => {
+            const key = hit.title || getNoteId(hit);
+            const existing = uniqueMap.get(key);
+            if (!existing || (hit.score || 0) > (existing.score || 0)) {
+              uniqueMap.set(key, hit);
+            }
+          });
+        setRelated(Array.from(uniqueMap.values()));
       })
       .catch((err) => {
         if (cancelled) return;
-        const message =
-          err?.response?.data?.message ||
-          err?.response?.data?.detail ||
-          err?.message ||
-          "Failed to load related notes.";
-        setRelatedError(message);
+        // Recommendations are embedding-backed and run on the server's key, so
+        // this never reports a missing user key — just surface the message.
+        setRelatedError(
+          describeAiError(err, "Failed to load related notes.").message,
+        );
       })
       .finally(() => {
         if (!cancelled) setRelatedLoading(false);
@@ -102,161 +87,33 @@ const AiInsightsPanel = ({ note }) => {
     };
   }, [noteId]);
 
-  const handleGenerateTags = async () => {
-    if (!noteId) return;
-    setTagsLoading(true);
-    setTagsError("");
-    try {
-      const response = await aiTagsService({ noteId, title, content });
-      const tags = response.data?.tags || [];
-      if (tags.length > 0) {
-        const merged = Array.from(new Set([...noteTags, ...tags]));
-        setSuggestedTags(merged);
-        await persistTags(merged);
-      }
-    } catch (err) {
-      setTagsError(
-        err?.response?.data?.message ||
-          err?.response?.data?.detail ||
-          err?.message ||
-          "Failed to generate tags.",
-      );
-    } finally {
-      setTagsLoading(false);
-    }
-  };
+  // Remove related notes that have been deleted from the store
+  useEffect(() => {
+    setRelated((prev) =>
+      prev.filter((hit) => {
+        const hitId = hit.noteId || hit.note_id || hit.id;
+        return existingNoteIds.has(hitId);
+      }),
+    );
+  }, [notes]);
 
   if (!noteId) return null;
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", mt: 4 }}>
+    <Box sx={{ width: "100%", mt: 4 }}>
       <Divider sx={{ borderColor: "rgba(var(--ov),0.08)", mb: 2 }} />
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
-        <LocalOfferRoundedIcon sx={{ color: "#a5b4fc" }} />
-        <Typography sx={{ fontWeight: 600, fontSize: 18 }}>
-          AI Tags
-        </Typography>
-
-        <Box sx={{ flexGrow: 1 }} />
-
-        <Button
-          size="small"
-          onClick={handleGenerateTags}
-          startIcon={
-            tagsLoading ? (
-              <CircularProgress size={14} sx={{ color: "#fff !important" }} />
-            ) : (
-              <AutoAwesomeRoundedIcon />
-            )
-          }
-          disabled={tagsLoading || (content || "").trim().length < TAG_MIN_CONTENT_CHARS}
-          sx={{
-            borderRadius: "999px",
-            textTransform: "none",
-            color: "var(--text)",
-            backgroundColor: "rgba(99,102,241,0.35)",
-            px: 2,
-            "&:hover": { backgroundColor: "rgba(99,102,241,0.55)" },
-            "&.Mui-disabled": {
-              color: "rgba(var(--ov),0.4)",
-              backgroundColor: "rgba(var(--ov),0.05)",
-            },
-          }}
-        >
-          {suggestedTags.length > 0 ? "Regenerate tags" : "Generate tags"}
-        </Button>
-      </Box>
-
-      <Paper
-        sx={{
-          p: 2.5,
-          borderRadius: 2,
-          background: "rgba(var(--ov),0.03)",
-          border: "1px solid rgba(var(--ov),0.08)",
-          color: "rgba(var(--ov),0.85)",
-          boxShadow: "none",
-        }}
-      >
-        {suggestedTags.length > 0 ? (
-          <>
-            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ gap: 0.75 }}>
-              {suggestedTags.map((tag) => {
-                const selected = selectedTagSet.has(tag);
-                return (
-                  <Chip
-                    key={tag}
-                    label={tag}
-                    size="small"
-                    onClick={() => handleToggleTag(tag)}
-                    onDelete={() => handleRemoveTag(tag)}
-                    sx={{
-                      cursor: "pointer",
-                      color: "var(--text)",
-                      backgroundColor: selected
-                        ? "rgba(99,102,241,0.32)"
-                        : "rgba(var(--ov),0.04)",
-                      border: selected
-                        ? "1px solid rgba(99,102,241,0.55)"
-                        : "1px solid rgba(var(--ov),0.12)",
-                      transition: "all 0.15s ease",
-                      "&:hover": {
-                        backgroundColor: selected
-                          ? "rgba(99,102,241,0.45)"
-                          : "rgba(var(--ov),0.08)",
-                      },
-                      "& .MuiChip-deleteIcon": {
-                        color: "rgba(var(--ov),0.55)",
-                        "&:hover": { color: "#ff8a80" },
-                      },
-                    }}
-                  />
-                );
-              })}
-            </Stack>
-            <Typography
-              sx={{
-                mt: 1.5,
-                fontSize: "0.75rem",
-                color: "rgba(var(--ov),0.45)",
-              }}
-            >
-              Click a tag to toggle whether it's saved on the note. Click × to discard the suggestion.
-            </Typography>
-          </>
-        ) : (
-          <Typography
-            sx={{
-              fontSize: "0.9rem",
-              color: "rgba(var(--ov),0.5)",
-              fontStyle: "italic",
-            }}
-          >
-            {(content || "").trim().length < TAG_MIN_CONTENT_CHARS
-              ? `Note must be at least ${TAG_MIN_CONTENT_CHARS} characters to generate tags.`
-              : "No tags yet. Click \"Generate tags\" to create some."}
-          </Typography>
-        )}
-        {tagsError && (
-          <Typography
-            sx={{
-              mt: 1.5,
-              fontSize: "0.85rem",
-              color: "rgba(255,138,128,0.95)",
-            }}
-          >
-            {tagsError}
-          </Typography>
-        )}
-      </Paper>
+      {/* The knowledge graph's view of this note, shown where it can actually
+          be checked — you have the note in front of you. */}
+      <NoteEntities noteId={noteId} />
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 4, mb: 1.5 }}>
-        <LightbulbRoundedIcon sx={{ color: "#a5b4fc" }} />
+        <LightbulbRoundedIcon sx={{ color: "var(--accent-soft)" }} />
         <Typography sx={{ fontWeight: 600, fontSize: 18 }}>
           Related notes
         </Typography>
         {relatedLoading && (
-          <CircularProgress size={14} sx={{ color: "#a5b4fc", ml: 1 }} />
+          <CircularProgress size={14} sx={{ color: "var(--accent-soft)", ml: 1 }} />
         )}
       </Box>
 
@@ -280,7 +137,7 @@ const AiInsightsPanel = ({ note }) => {
           <Typography
             sx={{
               fontSize: "0.9rem",
-              color: "rgba(var(--ov),0.5)",
+              color: "var(--text-muted)",
               fontStyle: "italic",
             }}
           >
@@ -339,7 +196,11 @@ const AiInsightsPanel = ({ note }) => {
                     overflow: "hidden",
                   }}
                 >
-                  {hit.chunkText}
+                  {(() => {
+                    const raw = hit.chunkText || "";
+                    const doc = new DOMParser().parseFromString(raw, "text/html");
+                    return doc.body.textContent || "";
+                  })()}
                 </Typography>
               </Paper>
             ))}

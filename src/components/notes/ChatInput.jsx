@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { IconButton, Paper, TextField } from "@mui/material";
+import { glassCard } from "../theme/glass";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 
 export default function ChatInput() {
@@ -24,9 +25,7 @@ export default function ChatInput() {
         mt: 2,
         px: 1.5,
         py: 1,
-        borderRadius: "30px",
-        background: "var(--surface)",
-        border: "1px solid rgba(var(--ov),0.10)",
+        ...glassCard({ radius: "30px", highlight: false }),
         display: "flex",
         alignItems: "center",
         gap: 1,

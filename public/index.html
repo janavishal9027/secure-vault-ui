@@ -30,16 +30,19 @@
     <title>Secure VAULT</title>
     <script>
       // Apply the saved theme before paint to avoid a flash of the wrong theme.
+      // Runs ahead of the bundle, so React's own effect only ever confirms what
+      // is already on the element. `colorScheme` is set alongside `data-theme`
+      // because it drives the parts of the page CSS cannot reach — scrollbars,
+      // native form controls, autofill — which would otherwise paint light.
       (function () {
+        var m = "dark";
         try {
-          var m = localStorage.getItem("THEME_MODE");
-          document.documentElement.setAttribute(
-            "data-theme",
-            m === "light" ? "light" : "dark"
-          );
+          if (localStorage.getItem("THEME_MODE") === "light") m = "light";
         } catch (e) {
-          document.documentElement.setAttribute("data-theme", "dark");
+          // localStorage unavailable (private mode, blocked cookies) — keep dark
         }
+        document.documentElement.setAttribute("data-theme", m);
+        document.documentElement.style.colorScheme = m;
       })();
     </script>
   </head>

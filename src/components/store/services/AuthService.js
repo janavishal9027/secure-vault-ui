@@ -81,3 +81,31 @@ export const getUserByUserIdService = (userId) => {
     params: { userId },
   });
 };
+
+/* ---------------- SELF-SERVICE PROFILE ---------------- */
+
+/** The signed-in user's own profile. Takes no id — the server reads the token. */
+export const getMyProfileService = () => {
+  return apiClient.get(`${baseUrl}/me`, {
+    headers: authHeaders(),
+  });
+};
+
+/**
+ * Patches the editable fields. Omit a key to leave it alone; send an empty
+ * string to clear it (which is how the avatar is removed).
+ */
+export const updateMyProfileService = (patch) => {
+  return apiClient.patch(`${baseUrl}/me`, patch, {
+    headers: authHeaders(),
+  });
+};
+
+/* ---------------- SESSION ---------------- */
+
+/** Trades a still-valid token for a fresh one. See sessionPolicy.js. */
+export const refreshTokenService = () => {
+  return apiClient.post(`${baseUrl}/refresh-token`, null, {
+    headers: authHeaders(),
+  });
+};

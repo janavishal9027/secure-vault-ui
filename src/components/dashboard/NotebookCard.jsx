@@ -9,20 +9,20 @@ const summaryChipSx = (status) => {
     return {
       color: "var(--text)",
       backgroundColor: "rgba(34,197,94,0.22)",
-      "& .MuiChip-icon": { color: "#86efac" },
+      "& .MuiChip-icon": { color: "var(--success)" },
     };
   }
   if (status === "PENDING") {
     return {
       color: "var(--text)",
       backgroundColor: "rgba(99,102,241,0.22)",
-      "& .MuiChip-icon": { color: "#a5b4fc" },
+      "& .MuiChip-icon": { color: "var(--accent-soft)" },
     };
   }
   return {
     color: "var(--text)",
     backgroundColor: "rgba(239,68,68,0.22)",
-    "& .MuiChip-icon": { color: "#fca5a5" },
+    "& .MuiChip-icon": { color: "var(--danger)" },
   };
 };
 
@@ -36,10 +36,13 @@ const formatNoteDate = (value) => {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
+  // The year is only worth the horizontal space when it is not the current
+  // one — on a four-across grid the date shares a row with the summary chip.
+  const sameYear = date.getFullYear() === new Date().getFullYear();
   return date.toLocaleString(undefined, {
     month: "short",
     day: "numeric",
-    year: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
     hour: "numeric",
     minute: "2-digit",
   });
@@ -61,6 +64,12 @@ const SummaryChip = ({ status }) => {
       }}
     />
   );
+};
+
+const stripHtml = (html) => {
+  if (!html) return "";
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return doc.body.textContent || "";
 };
 
 const GRID_PAGE_SIZE = 8;
@@ -109,7 +118,7 @@ export default function NotebookCard({ viewMode, notes, loading }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "#c9ccff",
+        color: "var(--accent-soft)",
       }}
     >
       <AddRoundedIcon />
@@ -165,6 +174,33 @@ export default function NotebookCard({ viewMode, notes, loading }) {
     color: "var(--text)",
     fontSize: 18,
     fontWeight: 500,
+  };
+
+  // Two lines, clamped on a line boundary. The title used to be `noWrap` on a
+  // row it shared with the summary chip, so the chip's width came out of the
+  // title's and every summarised note read "OAuth 2.0/ Client Au...".
+  const noteTitleSx = {
+    ...titleStyle,
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: "22px",
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    overflowWrap: "anywhere",
+  };
+
+  const notePreviewSx = {
+    color: "var(--text-2)",
+    fontSize: 13,
+    lineHeight: "18px",
+    mt: 0.75,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    overflowWrap: "anywhere",
   };
 
   const containerSx = {
@@ -251,30 +287,33 @@ export default function NotebookCard({ viewMode, notes, loading }) {
                     },
                   }}
                 >
-                  <Stack
-                    direction="row"
-                    alignItems="flex-start"
-                    justifyContent="space-between"
-                    spacing={1}
-                  >
-                    <Typography sx={titleStyle} noWrap>
-                      {note.title || "Untitled"}
-                    </Typography>
-                    <SummaryChip status={note.summaryStatus} />
-                  </Stack>
-
-                  <Typography
-                    sx={{ color: "var(--text-muted)", fontSize: 14, mt: 1, flex: 1 }}
-                    noWrap
-                  >
-                    {note.summary || note.content}
+                  {/* Title gets the full card width now — nothing shares its
+                      row, so it wraps to two lines before it truncates. */}
+                  <Typography sx={noteTitleSx}>
+                    {note.title || "Untitled"}
                   </Typography>
 
-                  {note.createdAt && (
-                    <Typography sx={{ ...noteDateSx, mt: "auto", pt: 1 }}>
+                  <Typography sx={notePreviewSx}>
+                    {note.summary || stripHtml(note.content) || "No content"}
+                  </Typography>
+
+                  {/* Footer, pinned to the bottom by `mt: auto`, so every card
+                      in the row lines its metadata up at the same height
+                      regardless of how long the title ran. */}
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
+                    sx={{ mt: "auto", pt: 1.25, minWidth: 0 }}
+                  >
+                    <Typography sx={{ ...noteDateSx, minWidth: 0 }} noWrap>
                       {formatNoteDate(note.createdAt)}
                     </Typography>
-                  )}
+                    <Box sx={{ flexShrink: 0 }}>
+                      <SummaryChip status={note.summaryStatus} />
+                    </Box>
+                  </Stack>
                 </Card>
               </Grid>
             ))}
@@ -326,10 +365,15 @@ export default function NotebookCard({ viewMode, notes, loading }) {
               justifyContent="space-between"
               spacing={1}
             >
-              <Typography sx={titleStyle}>
+              <Typography sx={{ ...titleStyle, fontWeight: 600, minWidth: 0 }} noWrap>
                 {note.title || "Untitled"}
               </Typography>
-              <Stack direction="row" spacing={1.25} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={1.25}
+                alignItems="center"
+                sx={{ flexShrink: 0 }}
+              >
                 <SummaryChip status={note.summaryStatus} />
                 {note.createdAt && (
                   <Typography sx={noteDateSx}>
@@ -339,8 +383,11 @@ export default function NotebookCard({ viewMode, notes, loading }) {
               </Stack>
             </Stack>
 
-            <Typography sx={{ color: "var(--text-muted)", fontSize: 14, mt: 0.5 }} noWrap>
-              {note.summary || note.content || "No content"}
+            <Typography
+              sx={{ color: "var(--text-2)", fontSize: 13.5, mt: 0.5 }}
+              noWrap
+            >
+              {note.summary || stripHtml(note.content) || "No content"}
             </Typography>
           </Card>
         ))}

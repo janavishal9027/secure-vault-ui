@@ -34,12 +34,15 @@ const SessionExpiredHandler = () => {
       open={open}
       PaperProps={{
         sx: {
-          background: "#1f2937", // match your app card background
-          color: "#fff",
+          // Follows the theme rather than pinning the old dark card colour:
+          // a hardcoded dark dialog is the one surface that stays dark when
+          // the rest of the app is light.
+          color: "var(--text)",
           borderRadius: 3,
           minWidth: { xs: "auto", sm: 420 },
           width: { xs: "calc(100vw - 64px)", sm: "auto" },
-          boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+          border: "1px solid rgba(var(--ov),0.1)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
         },
       }}
     >
@@ -50,7 +53,7 @@ const SessionExpiredHandler = () => {
 
         <Typography
           variant="body2"
-          sx={{ color: "rgba(255,255,255,0.7)", mb: 3 }}
+          sx={{ color: "var(--text-2)", mb: 3 }}
         >
           Your session has expired. Please log in again to continue using the
           application.

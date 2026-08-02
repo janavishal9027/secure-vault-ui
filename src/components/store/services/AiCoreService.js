@@ -81,6 +81,21 @@ export const aiTagsService = async ({ noteId, title, content }) => {
   );
 };
 
+// Grounded question answering over the caller's own notes.
+//
+// Distinct from /chat: this one answers ONLY from retrieved notes and returns
+// the citations the answer actually made — `citations` for note passages
+// ([n] in the text) and `graphFacts` for relationships drawn from the
+// knowledge graph ([Gn]). Both carry the notes behind them, so every claim is
+// traceable to something the user wrote.
+export const ragAnswerService = async ({ question, topK, history = [] }) => {
+  return apiClient.post(
+    `${aiBaseUrl}/rag/answer`,
+    { question, ...(topK ? { topK } : {}), history },
+    { headers: buildHeaders() },
+  );
+};
+
 export const aiRecommendationsService = async (noteId, topK) => {
   return apiClient.get(
     `${aiBaseUrl}/recommendations/${encodeURIComponent(noteId)}`,

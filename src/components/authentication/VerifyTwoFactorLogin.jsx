@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
-  CardContent,
   CircularProgress,
-  Paper,
+  InputAdornment,
   Stack,
   TextField,
-  Typography,
 } from "@mui/material";
 import SecurityRoundedIcon from "@mui/icons-material/SecurityRounded";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +14,7 @@ import {
   get2FAStatusService,
   verify2FALoginService,
 } from "../store/services/AuthService";
+import AuthShell, { authFieldSx, authPrimaryButtonSx } from "./AuthShell";
 
 export default function VerifyTwoFactorLogin() {
   const navigate = useNavigate();
@@ -93,96 +92,70 @@ export default function VerifyTwoFactorLogin() {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-      }}
+    <AuthShell
+      title="Two-factor verification"
+      subtitle="Open your authenticator app and enter the 6-digit code to finish signing in."
+      maxWidth={420}
     >
-      <Paper
-        elevation={8}
-        sx={{
-          borderRadius: "24px",
-          boxShadow: "0 20px 60px rgb(0, 0, 0)",
-          background: "rgba(255, 255, 255, 0.67)",
-          maxWidth: 460,
-          width: "100%",
-          p: 3,
-        }}
-      >
-        <CardContent>
-          <Stack alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
-            <SecurityRoundedIcon sx={{ fontSize: 44, color: "#f45b78" }} />
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              Two-Factor Verification
-            </Typography>
-            <Typography
-              variant="body2"
-              align="center"
-              sx={{ color: "text.secondary" }}
-            >
-              Open your authenticator app and enter the 6-digit code to finish
-              signing in.
-            </Typography>
-          </Stack>
+      {checkingStatus ? (
+        <Stack alignItems="center" sx={{ py: 4 }}>
+          <CircularProgress size={26} sx={{ color: "var(--accent-soft)" }} />
+        </Stack>
+      ) : (
+        <Box component="form" onSubmit={handleVerify} noValidate>
+          <TextField
+            autoFocus
+            fullWidth
+            label="6-digit verification code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={code}
+            onChange={(e) =>
+              setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+            }
+            placeholder="123456"
+            sx={{
+              ...authFieldSx,
+              mb: 2.5,
+              // The code is read off a screen and typed in one go; spacing the
+              // digits makes a mistyped one findable without re-reading all six.
+              "& input": { letterSpacing: "0.35em", fontSize: "1.05rem" },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SecurityRoundedIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
 
-          {checkingStatus ? (
-            <Stack alignItems="center" sx={{ py: 4 }}>
-              <CircularProgress />
-            </Stack>
-          ) : (
-            <Box component="form" onSubmit={handleVerify} noValidate>
-              <TextField
-                autoFocus
-                fullWidth
-                label="6-digit verification code"
-                inputMode="numeric"
-                value={code}
-                onChange={(e) =>
-                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                }
-                placeholder="123456"
-                sx={{ mb: 2 }}
-              />
+          <Button
+            type="submit"
+            disabled={submitting || code.length < 6}
+            sx={authPrimaryButtonSx}
+          >
+            {submitting ? "Verifying…" : "Verify"}
+          </Button>
 
-              <Stack direction="row" spacing={1.5}>
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  disabled={submitting || code.length < 6}
-                  sx={{
-                    backgroundColor: "#f45b78",
-                    borderRadius: 10,
-                    py: 1.3,
-                    textTransform: "none",
-                    fontSize: "16px",
-                    "&:hover": { backgroundColor: "#db3856" },
-                  }}
-                >
-                  {submitting ? "Verifying..." : "Verify"}
-                </Button>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={handleCancel}
-                  disabled={submitting}
-                  sx={{
-                    borderRadius: 10,
-                    py: 1.3,
-                    textTransform: "none",
-                    fontSize: "16px",
-                  }}
-                >
-                  Cancel
-                </Button>
-              </Stack>
-            </Box>
-          )}
-        </CardContent>
-      </Paper>
-    </Box>
+          <Button
+            fullWidth
+            onClick={handleCancel}
+            disabled={submitting}
+            sx={{
+              mt: 1.5,
+              borderRadius: "999px",
+              py: 1.1,
+              textTransform: "none",
+              fontSize: "0.9rem",
+              color: "var(--text-2)",
+              "&:hover": { background: "rgba(var(--ov),0.06)" },
+            }}
+          >
+            Cancel and sign out
+          </Button>
+        </Box>
+      )}
+    </AuthShell>
   );
 }

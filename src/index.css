@@ -9,6 +9,52 @@
   /* RGB channel used by every rgba(var(--ov), x) overlay (borders, dividers,
      hover states, muted text). White on dark; dark slate on light. */
   --ov: 255, 255, 255;
+  /* Brand accent. Identical in both themes on purpose — it is applied to
+     solid surfaces (buttons, active states) whose contrast comes from the
+     accent itself, not from the surrounding theme. Mirrors ACCENT in
+     theme/palette.js. */
+  --accent: #6366f1;
+  --accent-soft: #a5b4fc;
+
+  /* ===== Icon and status colours =====
+     These are the one family that genuinely has to differ between themes.
+     A 300-level tint like #a5b4fc measures 9.5:1 against this background and
+     1.99:1 against white — it is not a colour that "works everywhere", it is a
+     colour chosen for a dark surface. Each pair below is the same hue at the
+     lightness its own background needs, and every value clears 3:1 (the WCAG
+     minimum for icons and graphics) on both --bg and --surface. */
+  --icon: #e8edf7;
+  --icon-muted: #98a2b3;
+  --success: #86efac;
+  --warning: #fcd34d;
+  --danger: #fca5a5;
+  --info: #93c5fd;
+  /* Raised-card shadow. A shadow is light being blocked, so its weight has to
+     follow the surface: heavy black reads as depth against a near-black page
+     and as a dirty smudge against a white one. */
+  --shadow-card: 0 24px 70px rgba(0, 0, 0, 0.45);
+
+  /* ===== Glass =====
+     Frosted surfaces for things that float above content — dialogs, menus,
+     drawers, the app bar, raised cards.
+
+     The alphas are not a style choice, they are a contrast budget. A
+     translucent panel takes on whatever is behind it, so the worst case is
+     glass sitting over the brightest ambient blob on the page. Measured
+     against that worst case, --text holds 11:1 here and --text-2 holds 8:1,
+     both well clear of the 4.5:1 body-text minimum. Lower the alpha and that
+     margin is what you spend.
+
+     Dark glass is a light film over a dark page, so a low alpha reads as
+     frost. Light glass has to be much more opaque: white at 6% over an
+     already-light page is invisible, and the panel would lose its edge. */
+  --glass-bg: rgba(255, 255, 255, 0.055);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  /* The bright top edge that sells the effect — a highlight where the light
+     catches the lip of the glass. */
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --glass-blur: 18px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.38);
   color-scheme: dark;
 }
 
@@ -21,12 +67,47 @@
   --text-2: #2a3342;
   --text-muted: #5b6472;
   --ov: 17, 24, 39;
+  --accent: #6366f1;
+  /* Same hue, taken down to the lightness a white surface needs. The pale
+     indigo used in dark mode measures 1.99:1 here. */
+  --accent-soft: #4f46e5;
+
+  --icon: #111827;
+  --icon-muted: #5b6472;
+  --success: #15803d;
+  --warning: #a16207;
+  --danger: #b91c1c;
+  --info: #1d4ed8;
+  /* Softer and tinted toward the page's blue-grey, which reads as elevation
+     on a light surface where flat black reads as dirt. */
+  --shadow-card: 0 18px 44px rgba(15, 23, 42, 0.14);
+
+  /* Much more opaque than the dark equivalent — see the note above. The border
+     also flips from a white highlight to a dark hairline, because a white edge
+     on a light page has nothing to contrast against. */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(17, 24, 39, 0.10);
+  --glass-highlight: rgba(255, 255, 255, 0.85);
+  --glass-blur: 18px;
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
   color-scheme: light;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  /* Ambient colour behind the glass.
+     Frosted glass is only legible as glass when there is something varied
+     behind it to blur. Over a flat fill, `backdrop-filter` has nothing to
+     work with and the panel reads as plain translucency — the effect costs a
+     repaint and buys nothing. These two soft blooms give every glass surface
+     something to pick up as it moves over the page.
+     Alphas are bounded on purpose: they are the worst case the glass contrast
+     budget was measured against (see the --glass-bg note above). */
+  background:
+    radial-gradient(circle at 12% 8%, rgba(99, 102, 241, 0.22), transparent 30%),
+    radial-gradient(circle at 88% 82%, rgba(34, 211, 238, 0.16), transparent 28%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   transition: background-color 0.2s ease, color 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

@@ -16,6 +16,7 @@ import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import { useNavigate } from "react-router-dom";
 
 import { semanticSearchService } from "../store/services/AiCoreService";
+import { describeAiError } from "../utils/aiErrors";
 
 const AiSearchDialog = ({ open, onClose }) => {
   const navigate = useNavigate();
@@ -68,12 +69,9 @@ const AiSearchDialog = ({ open, onClose }) => {
       setHasSearched(true);
     } catch (err) {
       if (seq !== searchSeqRef.current) return;
-      const message =
-        err?.response?.data?.message ||
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Search failed.";
-      setError(message);
+      // Search is embedding-backed and runs on the server's key, so it never
+      // reports a missing user key — only the message is relevant here.
+      setError(describeAiError(err, "Search failed.").message);
       setHits([]);
       setHasSearched(true);
     } finally {
@@ -111,7 +109,7 @@ const AiSearchDialog = ({ open, onClose }) => {
             px: 1,
           }}
         >
-          <AutoAwesomeRoundedIcon sx={{ color: "#a5b4fc" }} />
+          <AutoAwesomeRoundedIcon sx={{ color: "var(--accent-soft)" }} />
           <Typography sx={{ fontWeight: 600, flex: 1 }}>
             Semantic search
           </Typography>
@@ -141,11 +139,11 @@ const AiSearchDialog = ({ open, onClose }) => {
             onChange={(e) => setQuery(e.target.value)}
             sx={{ color: "var(--text)", fontSize: 16 }}
           />
-          {loading && <CircularProgress size={18} sx={{ color: "#a5b4fc", mr: 1 }} />}
+          {loading && <CircularProgress size={18} sx={{ color: "var(--accent-soft)", mr: 1 }} />}
         </Paper>
 
         {error && (
-          <Typography sx={{ color: "#ff8a80", mt: 1.5, fontSize: 14 }}>
+          <Typography sx={{ color: "var(--danger)", mt: 1.5, fontSize: 14 }}>
             {error}
           </Typography>
         )}
@@ -153,7 +151,7 @@ const AiSearchDialog = ({ open, onClose }) => {
         <Box sx={{ mt: 2, maxHeight: "55vh", overflowY: "auto" }}>
           {hasSearched && !loading && hits.length === 0 && !error && (
             <Typography
-              sx={{ color: "rgba(var(--ov),0.5)", fontStyle: "italic", py: 4, textAlign: "center" }}
+              sx={{ color: "var(--text-muted)", fontStyle: "italic", py: 4, textAlign: "center" }}
             >
               No matches yet. Try a different query.
             </Typography>
