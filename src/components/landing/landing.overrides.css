@@ -120,6 +120,48 @@
   --l-shadow: 0, 0, 0;
 }
 
+/* ===== Typography: give the words room =====
+ *
+ * The design sets `letter-spacing: -.055em` on every heading and `-.04em` on
+ * the wordmark. That is display tracking — it looks deliberate on a Figma
+ * canvas at one size, but rendered in a browser it closes the gaps between
+ * words as much as between letters, so "Speak your notes" reads as
+ * "Speakyournotes".
+ *
+ * The fix is two-sided: relax the negative tracking, and put the word gap back
+ * explicitly. Letters stay tight enough to keep the design's character; words
+ * separate again.
+ */
+.landing-root h1,
+.landing-root h2,
+.landing-root h3 {
+  letter-spacing: -0.018em;
+  word-spacing: 0.12em;
+}
+
+.landing-root .brand {
+  letter-spacing: -0.01em;
+  word-spacing: 0.1em;
+}
+
+/* Body copy was never tracked negatively, but the same generosity helps at
+   these sizes — particularly the leads, which run long. */
+.landing-root .lead,
+.landing-root .section-head > p,
+.landing-root p,
+.landing-root li,
+.landing-root dd {
+  word-spacing: 0.045em;
+}
+
+/* Small caps labels already have positive tracking; adding word-spacing on top
+   of that is what stops "VOICE-POWERED SECURITY" reading as one token. */
+.landing-root .eyebrow,
+.landing-root .note-meta,
+.landing-root .post small {
+  word-spacing: 0.18em;
+}
+
 /* ===== Content width =====
  *
  * The design caps its container at 1160px. That was chosen against a preview
@@ -187,6 +229,22 @@
    sets that to 42px normally and 65px below 900px — both preserved here. */
 .landing-root .hero {
   padding-top: calc(var(--landing-header-h) + 42px);
+
+  /* The gap below the hero was two paddings stacking: the hero's own 82px plus
+     the next section's 110px, so ~190px of empty page between the sign-up
+     buttons and the first thing they lead to. The hero also holds a
+     `min-height` of 750px, which on a short viewport adds its own slack on top.
+
+     Trimmed to 24px here; the section below still contributes its 110px, which
+     is the separation the design intended. */
+  padding-bottom: 24px;
+
+  /* The other half of the gap. The design's `min(750px, 100vh - 76px)` was
+     sized for a header that scrolled away; ours is fixed and already accounted
+     for in the padding above, so the same figure over-reserved. Subtracting the
+     real header height stops a short hero from stretching to fill space it does
+     not need. */
+  min-height: min(680px, calc(100vh - var(--landing-header-h)));
 }
 
 /* The nav's opacity is set on --l-nav-1/2 in the palette above, not here.
@@ -240,6 +298,385 @@
   /* The design shrinks the header here: 10px padding + 54px nav. */
   .landing-root {
     --landing-header-h: 64px;
+  }
+}
+
+/* ===== Section rhythm =====
+ *
+ * The design pads every section 110px top and bottom, so adjacent sections
+ * contribute 220px between them. That reads as generous once and as a hole by
+ * the third repetition — particularly between Community and Posts, and between
+ * Posts and the closing call to action, where the eye has nothing to rest on.
+ *
+ * Halving the *joins* rather than the padding keeps each section's internal
+ * breathing room intact while closing the gaps between them.
+ */
+.landing-root .section + .section {
+  padding-top: 56px;
+}
+
+.landing-root .section:has(+ .cta) {
+  padding-bottom: 56px;
+}
+
+.landing-root .cta {
+  padding-top: 72px;
+}
+
+/* The voice banner is a card, not a band, so it carries its own margin rather
+   than relying on section padding. */
+.landing-root .voice {
+  margin-block: 40px;
+}
+
+/* ===== Voice demo =====
+ * The button was cosmetic in the design; it captures for real now, so it needs
+ * somewhere to put the words. */
+.landing-root .voice-demo-output {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(var(--l-ov), 0.06);
+  border: 1px solid rgba(var(--l-aqua-rgb, 106, 232, 223), 0.22);
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.landing-root .voice-demo-text {
+  color: var(--l-text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  min-height: 1.6em;
+}
+
+.landing-root .voice-demo-hint,
+.landing-root .voice-demo-notice {
+  color: var(--l-text-2);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.landing-root .voice-demo-hint a {
+  color: var(--l-aqua);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.landing-root .voice-read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--l-aqua);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.landing-root .voice-read-more svg {
+  width: 14px;
+  height: 14px;
+}
+
+.landing-root .voice-read-more:hover {
+  text-decoration: underline;
+}
+
+/* ===== Feedback carousel ===== */
+.landing-root .feedback-viewport {
+  position: relative;
+}
+
+.landing-root .feedback-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 26px;
+}
+
+.landing-root .feedback-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.landing-root .feedback-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--l-ov), 0.22);
+  transition: background 0.2s ease, width 0.2s ease;
+}
+
+.landing-root .feedback-dot.active {
+  width: 22px;
+  background: var(--l-aqua);
+}
+
+.landing-root .feedback-dot-nav {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--l-ov), 0.16);
+  background: rgba(var(--l-ov), 0.05);
+  color: var(--l-text-2);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.landing-root .feedback-dot-nav:hover {
+  color: var(--l-text);
+  background: rgba(var(--l-ov), 0.1);
+}
+
+/* ===== Posts are buttons ===== */
+.landing-root .post {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+  border: 1px solid rgba(var(--l-ov), 0.12);
+}
+
+.landing-root .post > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.landing-root .post p {
+  flex: 1;
+}
+
+.landing-root .post-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--l-aqua);
+}
+
+.landing-root .post-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.landing-root .post:focus-visible,
+.landing-root .listen:focus-visible,
+.landing-root .voice-read-more:focus-visible,
+.landing-root .feedback-dot:focus-visible,
+.landing-root .feedback-dot-nav:focus-visible {
+  outline: 2px solid var(--l-aqua);
+  outline-offset: 3px;
+}
+
+/* ===== Scrollbar =====
+ *
+ * Deliberately absent. The global rule in index.css already covers this page
+ * and its modals, and it is the only place scrollbar styling should live.
+ *
+ * There used to be a copy here, keyed to `--l-ov` instead of `--ov`. It was
+ * redundant — the two triplets carry identical values in both modes
+ * (255,255,255 dark / 17,24,39 light) — and it was missing
+ * `::-webkit-scrollbar-button`, which is the exact omission that put stepper
+ * arrows on every scrollbar in the app in the first place. Six copies of this
+ * rule all forgot the same line; a seventh was not going to remember it
+ * either.
+ *
+ * If the landing page ever genuinely needs a different bar, override only the
+ * thumb colour here and leave the structure to the global rule.
+ */
+
+/* ===== Feature cards are buttons =====
+ *
+ * They open a modal, so they are `<button>` elements now rather than
+ * `<article>` — clickable by keyboard and announced as controls. That brings
+ * the browser's default button styling with it, which has to be undone, and
+ * the design's card was never laid out as a button in the first place.
+ */
+.landing-root .feature {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+.landing-root .feature p {
+  flex: 1;
+}
+
+/* The affordance. Without it a card looks like a static panel and nobody
+   discovers there is anything behind it. */
+.landing-root .feature-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--l-aqua);
+  opacity: 0;
+  transform: translateY(-3px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-root .feature-more svg {
+  width: 14px;
+  height: 14px;
+}
+
+.landing-root .feature:hover .feature-more,
+.landing-root .feature:focus-visible .feature-more {
+  opacity: 1;
+  transform: none;
+}
+
+.landing-root .feature:focus-visible {
+  outline: 2px solid var(--l-aqua);
+  outline-offset: 3px;
+}
+
+/* Touch has no hover, so the cue would never appear on a phone. */
+@media (hover: none) {
+  .landing-root .feature-more {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ===== Security modal =====
+ * Styled with the landing tokens so it belongs to this page rather than the
+ * dashboard, while MUI's Dialog supplies the focus trap, Escape handling,
+ * scroll lock and aria wiring underneath. */
+.landing-root .security-modal {
+  /* The dialog itself clips (overflow:hidden + radius); this scrolls. Keeping
+     the two jobs on separate elements is what stops the scrollbar's ends
+     showing past the dialog's rounded corners. */
+  max-height: min(84vh, 900px);
+  overflow-y: auto;
+  padding: 30px 34px 34px;
+}
+
+.landing-root .security-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 22px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid rgba(var(--l-ov), 0.12);
+}
+
+.landing-root .security-modal-head h2 {
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  margin: 12px 0 10px;
+}
+
+.landing-root .security-modal-lead {
+  color: var(--l-text-2);
+  font-size: 0.95rem;
+  margin: 0;
+  max-width: 460px;
+}
+
+.landing-root .security-block + .security-block {
+  margin-top: 30px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(var(--l-ov), 0.08);
+}
+
+.landing-root .security-block-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 18px;
+}
+
+.landing-root .security-block-head h3 {
+  font-size: 1.12rem;
+  margin: 0;
+}
+
+.landing-root .security-block .feature-icon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+}
+
+.landing-root .security-block .feature-icon svg {
+  width: 19px;
+}
+
+.landing-root .security-block dl {
+  margin: 0;
+}
+
+.landing-root .security-block dl > div + div {
+  margin-top: 17px;
+}
+
+.landing-root .security-block dt {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 0.93rem;
+  color: var(--l-text);
+  line-height: 1.5;
+}
+
+.landing-root .security-block dt svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--l-aqua);
+}
+
+.landing-root .security-block dd {
+  margin: 6px 0 0 25px;
+  color: var(--l-text-2);
+  font-size: 0.88rem;
+  line-height: 1.68;
+}
+
+/* The limits section is not a footnote — it is the part that makes the rest
+   credible, so it reads as a peer of the other blocks, not a disclaimer. */
+.landing-root .security-limits .feature-icon {
+  color: var(--l-text-2);
+  background: rgba(var(--l-ov), 0.07);
+}
+
+.landing-root .security-limits dd {
+  margin-left: 0;
+}
+
+@media (max-width: 580px) {
+  .landing-root .security-modal {
+    padding: 22px 20px 26px;
+  }
+  .landing-root .security-block dd {
+    margin-left: 0;
   }
 }
 

@@ -11,6 +11,7 @@ import OAuthRedirect from "./components/pages/OAuthRedirect";
 import SessionExpiredHandler from "./components/authentication/SessionExpiredHandler";
 import SessionManager from "./components/authentication/SessionManager";
 import RequireAuth from "./components/authentication/RequireAuth";
+import FeedbackPrompt from "./components/dashboard/FeedbackPrompt";
 import ErrorBoundary from "./components/utils/ErrorBoundary";
 
 // Split at the route boundary. The dashboard pulls in the rich-text editor,
@@ -63,6 +64,9 @@ function App() {
           are not. Mounted outside the router so the policy holds across
           navigation rather than restarting on every route change. */}
       <SessionManager />
+      {/* Asks each signed-in person for feedback once. The server enforces
+          "once"; this only decides when to ask. */}
+      <FeedbackPrompt />
       {/* Outermost boundary: a render error anywhere below this shows a
           recoverable message rather than a blank page. Pages add their own
           inner boundaries so a failure stays local where it can. */}

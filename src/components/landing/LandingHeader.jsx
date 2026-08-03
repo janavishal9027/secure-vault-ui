@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import LandingIcon from "./LandingIcon";
 import { BRAND, scrollToSection } from "./landingNav";
+import { NAV } from "./landingContent";
 import { useThemeMode } from "../theme/ThemeModeContext";
 
 /** Fallback threshold, used only if the hero's buttons cannot be found. */
@@ -74,16 +75,15 @@ export default function LandingHeader() {
           <span className="brand-mark">✦</span> {BRAND}
         </a>
 
+        {/* Rendered from the same list the page renders its sections from,
+            so a renamed or reordered section cannot leave the nav pointing at
+            an anchor that no longer exists. */}
         <div className="nav-center">
-          <a href="#security" onClick={jump("security")}>
-            Security
-          </a>
-          <a href="#features" onClick={jump("features")}>
-            Features
-          </a>
-          <a href="#stories" onClick={jump("stories")}>
-            Stories
-          </a>
+          {NAV.map((section) => (
+            <a key={section.id} href={`#${section.id}`} onClick={jump(section.id)}>
+              {section.label}
+            </a>
+          ))}
         </div>
 
         {/* Always visible, unlike the auth pair: the mode toggle is the only
@@ -122,15 +122,11 @@ export default function LandingHeader() {
         </button>
 
         <div className={`nav-links ${navOpen ? "open" : ""}`}>
-          <a href="#security" onClick={jump("security")}>
-            Security
-          </a>
-          <a href="#features" onClick={jump("features")}>
-            Features
-          </a>
-          <a href="#stories" onClick={jump("stories")}>
-            Stories
-          </a>
+          {NAV.map((section) => (
+            <a key={section.id} href={`#${section.id}`} onClick={jump(section.id)}>
+              {section.label}
+            </a>
+          ))}
           <a href="/login" onClick={go("/login")}>
             Log in
           </a>

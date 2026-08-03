@@ -2,7 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import LandingIcon from "./LandingIcon";
-import { scrollToSection } from "./landingNav";
+import LandingModal from "./LandingModal";
+import FeedbackCarousel from "./FeedbackCarousel";
+import VoiceDemo from "./VoiceDemo";
+import { FEATURES as FEATURE_MODALS, SECURITY, POSTS as POST_MODALS } from "./landingModalContent";
+import {
+  CTA,
+  FEATURE_CARDS,
+  HERO,
+  POSTS,
+  ROLES,
+  SECURITY_POINTS,
+} from "./landingContent";
 
 // The landing page from the Figma Make design (BuildLandingPage/src/App.tsx).
 //
@@ -10,38 +21,6 @@ import { scrollToSection } from "./landingNav";
 // button inert and every link pointing at "#top". Structure, markup and class
 // names are unchanged so the design's stylesheet still applies exactly; what
 // changed is that the controls now do what they appear to do.
-
-const FEATURES = [
-  ["shield", "2FA Protection", "Mandatory two-factor authentication keeps your notes safe", "violet"],
-  ["mic", "Voice Commands", "Create notes hands-free with speech-to-text technology", "aqua"],
-  ["users", "Role-Based Access", "Customer, Admin, and Delegate roles with distinct permissions", "gold"],
-  ["lock", "Private & Secure", "Each user can only see and manage their own notes", "rose"],
-];
-
-const SECURITY_POINTS = [
-  "End-to-end encrypted notes",
-  "Mandatory two-factor authentication",
-  "Granular permission controls",
-  "Your data stays yours",
-];
-
-const ROLES = [
-  ["Customer", "Your personal sanctuary for private thought."],
-  ["Delegate", "Collaborate without losing your boundaries."],
-  ["Admin", "Guide the workspace with full visibility."],
-];
-
-const TESTIMONIALS = [
-  ["SecureNotes is the rare tool that makes me feel more focused and more protected at the same time.", "Maya Torres", "Product designer"],
-  ["The voice capture changes everything. My best ideas no longer disappear between meetings.", "Elliot Park", "Founder, Plantroom"],
-  ["Our team finally has an intuitive way to share context without compromising privacy.", "Naomi Okafor", "Operations lead"],
-];
-
-const POSTS = [
-  ["https://images.unsplash.com/photo-1633412802994-5c058f151b66?auto=format&fit=crop&w=900&q=80", "Role-Based Access: Why It Matters", "Understanding how role-based access control keeps every thought private."],
-  ["https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80", "Voice Commands: The Future of Note-Taking", "Discover a calmer way to capture ideas the moment they arrive."],
-  ["https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=900&q=80", "Getting Started with SecureNotes", "A simple guide to creating your first protected workspace."],
-];
 
 /** The design's pill button. `onClick` is new — the export had none. */
 const LandingButton = ({ children, secondary = false, onClick }) => (
@@ -57,12 +36,9 @@ const LandingButton = ({ children, secondary = false, onClick }) => (
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [voiceActive, setVoiceActive] = useState(false);
+  // Which modal is open, keyed by its entry. null = none.
+  const [modal, setModal] = useState(null);
 
-  // Every call to action goes through sign up or log in — never straight to
-  // the dashboard. This is the public page; it reads the same for everyone,
-  // and a signed-in visitor loses nothing by passing through /login.
-  const handleVoice = () => setVoiceActive((active) => !active);
 
   return (
     <main>
@@ -70,23 +46,21 @@ export default function LandingPage() {
       <section className="hero shell" id="top">
         <div className="hero-copy">
           <p className="eyebrow">
-            <LandingIcon name="bolt" /> Voice-powered security
+            <LandingIcon name="bolt" /> {HERO.eyebrow}
           </p>
           <h1>
-            Your thoughts.
+            {HERO.headline[0]}
             <br />
-            <em>Secured</em> by voice.
+            <em>{HERO.headline[1]}</em>
+            {HERO.headline[2]}
           </h1>
-          <p className="lead">
-            Create, manage, and protect your digital notes with voice commands,
-            two-factor authentication, and role-based access control.
-          </p>
+          <p className="lead">{HERO.lead}</p>
           <div className="actions">
-            <LandingButton onClick={() => navigate("/signUp")}>
-              Get started free
+            <LandingButton onClick={() => navigate(HERO.primary.to)}>
+              {HERO.primary.label}
             </LandingButton>
-            <LandingButton secondary onClick={() => navigate("/login")}>
-              Log in
+            <LandingButton secondary onClick={() => navigate(HERO.secondary.to)}>
+              {HERO.secondary.label}
             </LandingButton>
           </div>
           <div className="trust">
@@ -149,14 +123,23 @@ export default function LandingPage() {
           <p>Security-first tools for capturing the thoughts that matter.</p>
         </header>
         <div className="feature-grid">
-          {FEATURES.map(([icon, title, text, tone]) => (
-            <article className="glass feature" key={title}>
+          {FEATURE_CARDS.map(({ icon, title, text, tone }) => (
+            <button
+              type="button"
+              className="glass feature"
+              key={title}
+              onClick={() => setModal(FEATURE_MODALS[title])}
+              aria-haspopup="dialog"
+            >
               <span className={`feature-icon ${tone}`}>
                 <LandingIcon name={icon} />
               </span>
               <h3>{title}</h3>
               <p>{text}</p>
-            </article>
+              <span className="feature-more">
+                Read more <LandingIcon name="arrow" />
+              </span>
+            </button>
           ))}
         </div>
       </section>
@@ -183,7 +166,7 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <LandingButton onClick={() => scrollToSection("features")}>
+            <LandingButton onClick={() => setModal(SECURITY)}>
               Explore security
             </LandingButton>
           </div>
@@ -273,47 +256,15 @@ export default function LandingPage() {
             Simply press the mic and start talking. Advanced speech-to-text
             captures your thoughts with remarkable accuracy.
           </p>
-          <button
-            type="button"
-            className={`listen ${voiceActive ? "listening" : ""}`}
-            onClick={handleVoice}
-          >
-            <LandingIcon name="mic" />
-            {voiceActive ? "Listening… tap to stop" : "Try voice capture"}
-          </button>
+          <VoiceDemo onReadMore={() => setModal(FEATURE_MODALS["Voice Commands"])} />
         </div>
-        <small>VOICE-TO-TEXT: {voiceActive ? "LISTENING" : "READY"}</small>
       </section>
 
-      {/* ---------------- TESTIMONIALS ---------------- */}
-      <section id="stories" className="section shell">
-        <header className="section-head">
-          <p className="eyebrow">From the community</p>
-          <h2>
-            Trusted with their
-            <br />
-            <em>best thinking.</em>
-          </h2>
-        </header>
-        <div className="testimonial-grid">
-          {TESTIMONIALS.map(([quote, name, role]) => (
-            <blockquote className="glass" key={name}>
-              <LandingIcon name="quote" />
-              <p>“{quote}”</p>
-              <footer>
-                <i>{name.charAt(0)}</i>
-                <span>
-                  <b>{name}</b>
-                  <small>{role}</small>
-                </span>
-              </footer>
-            </blockquote>
-          ))}
-        </div>
-      </section>
+      {/* ---------------- COMMUNITY ---------------- */}
+      <FeedbackCarousel />
 
       {/* ---------------- POSTS ---------------- */}
-      <section className="section shell">
+      <section id="posts" className="section shell">
         <header className="section-head">
           <p className="eyebrow">Notes on privacy</p>
           <h2>
@@ -322,18 +273,24 @@ export default function LandingPage() {
           <p>Ideas, guides, and a clearer look at secure note-taking.</p>
         </header>
         <div className="post-grid">
-          {POSTS.map(([img, title, text]) => (
-            <article className="glass post" key={title}>
-              <img src={img} alt="" loading="lazy" />
+          {POSTS.map((post) => (
+            <button
+              type="button"
+              className="glass post"
+              key={post.title}
+              onClick={() => setModal(POST_MODALS[post.modal])}
+              aria-haspopup="dialog"
+            >
+              <img src={post.image} alt="" loading="lazy" />
               <div>
-                <small>SECURE VAULT TEAM · 12 MAR 2026</small>
-                <h3>{title}</h3>
-                <p>{text}</p>
-                <a href="#top" onClick={(e) => e.preventDefault()}>
+                <small>SECURE VAULT TEAM</small>
+                <h3>{post.title}</h3>
+                <p>{post.text}</p>
+                <span className="post-link">
                   Read article <LandingIcon name="arrow" />
-                </a>
+                </span>
               </div>
-            </article>
+            </button>
           ))}
         </div>
       </section>
@@ -341,21 +298,24 @@ export default function LandingPage() {
       {/* ---------------- CTA ---------------- */}
       <section className="cta">
         <div className="shell">
-          <p className="eyebrow">A calmer place to think</p>
+          <p className="eyebrow">{CTA.eyebrow}</p>
           <h2>
-            Ready to secure your
+            {CTA.headline[0]}
             <br />
-            <em>notes?</em>
+            <em>{CTA.headline[1]}</em>
           </h2>
-          <p>
-            Join thousands of people who trust Secure Vault with what matters
-            most.
-          </p>
-          <LandingButton onClick={() => navigate("/signUp")}>
-            Start securing your notes
+          <p>{CTA.lead}</p>
+          <LandingButton onClick={() => navigate(CTA.action.to)}>
+            {CTA.action.label}
           </LandingButton>
         </div>
       </section>
+
+      <LandingModal
+        entry={modal}
+        open={Boolean(modal)}
+        onClose={() => setModal(null)}
+      />
     </main>
   );
 }

@@ -227,3 +227,123 @@ describe("index.css and palette.js agree", () => {
     });
   });
 });
+
+describe("scrollbars are defined once, globally", () => {
+  // The arrows came from an omission repeated six times: styling
+  // `::-webkit-scrollbar` makes Chrome draw stepper buttons at both ends until
+  // you explicitly remove them, and none of the six per-component copies did.
+  //
+  // The fix was one global rule. These assert it stays one, because the failure
+  // mode is not a broken rule — it is a second rule appearing somewhere else
+  // and quietly winning.
+  const root = path.resolve(__dirname, "../..");
+  const indexCss = fs.readFileSync(path.join(root, "index.css"), "utf8");
+
+  test("the global rule removes the stepper arrows", () => {
+    expect(indexCss).toMatch(/::-webkit-scrollbar-button\s*\{[^}]*display:\s*none/);
+    // `display: none` alone is unreliable across Chrome versions; zero
+    // dimensions are what actually reclaim the space.
+    const block = indexCss.match(/::-webkit-scrollbar-button\s*\{([^}]*)\}/)[1];
+    expect(block).toMatch(/width:\s*0/);
+    expect(block).toMatch(/height:\s*0/);
+  });
+
+  test("the thumb is inset rather than flush against the edge", () => {
+    // A thumb painted straight into the track rides over a card's rounded
+    // corner and reads as escaping it. Transparent border + content-box clip
+    // is what floats it inside.
+    const thumb = indexCss.match(/::-webkit-scrollbar-thumb\s*\{([^}]*)\}/)[1];
+    expect(thumb).toMatch(/border:\s*2px solid transparent/);
+    expect(thumb).toMatch(/background-clip:\s*content-box/);
+  });
+
+  test("the standard properties are scoped away from Chrome", () => {
+    // The trap that made every earlier fix look like it had failed.
+    //
+    // `scrollbar-width` / `scrollbar-color` are NOT a peer of
+    // `::-webkit-scrollbar`. From Chrome 121 the standard properties win, and
+    // setting either makes Chrome ignore the webkit pseudo-elements outright.
+    // A global `* { scrollbar-width: thin }` therefore disables all the styling
+    // below it and restores the browser's native scrollbar — arrows included —
+    // while the CSS still reads as though it should work.
+    //
+    // So they must sit behind a query that is false in Chrome.
+    const standalone = indexCss
+      // Drop the @supports block, then look for any survivors.
+      .replace(/@supports not selector\(::-webkit-scrollbar\)\s*\{[\s\S]*?\n\}/, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+
+    expect(standalone).not.toMatch(/scrollbar-width\s*:/);
+    expect(standalone).not.toMatch(/scrollbar-color\s*:/);
+
+    // And the guarded block must still exist, or Firefox gets nothing.
+    expect(indexCss).toMatch(
+      /@supports not selector\(::-webkit-scrollbar\)\s*\{[\s\S]*?scrollbar-width/,
+    );
+    expect(indexCss).toMatch(/::-webkit-scrollbar\s*\{/);
+  });
+
+  test("nothing outside index.css re-declares scrollbar styling", () => {
+    // Covers .css as well as .jsx. The landing stylesheet used to carry its own
+    // copy keyed to `--l-ov`; it was redundant (the triplets are identical in
+    // both modes) and, like the six component copies before it, it omitted the
+    // button rule. One definition is the only arrangement where that omission
+    // cannot recur.
+    //
+    // ChatInput is the single exemption: it *hides* the bar on a one-line
+    // input, which is a different intent from styling one.
+    const walk = (dir) =>
+      fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return walk(full);
+        return /\.(jsx|css)$/.test(entry.name) ? [full] : [];
+      });
+
+    const offenders = walk(path.join(root, "components"))
+      .filter((file) => !file.endsWith("ChatInput.jsx"))
+      .filter((file) => {
+        // Ignore prose: these files explain the rule in comments.
+        const source = fs
+          .readFileSync(file, "utf8")
+          .replace(/\/\*[\s\S]*?\*\//g, "")
+          .replace(/^\s*\/\/.*$/gm, "");
+        return /::-webkit-scrollbar/.test(source);
+      })
+      .map((file) => path.relative(root, file));
+
+    expect(offenders).toEqual([]);
+  });
+
+  test("no component sets the standard scrollbar properties", () => {
+    // The camelCase trap. In `sx`, the standard properties are written
+    // `scrollbarWidth` / `scrollbarColor`, so a search for
+    // "::-webkit-scrollbar" or "scrollbar-width" finds nothing — and two of
+    // these were sitting in the chat page defeating the global styling for
+    // those panels while every other scrollbar in the app looked fine.
+    //
+    // Setting either one on an element makes Chrome ignore the global webkit
+    // rules *for that element*, so this has to be caught by name.
+    //
+    // ChatInput is exempt: `scrollbarWidth: "none"` hides the bar on a
+    // one-line input, which is a different intent.
+    const walk = (dir) =>
+      fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return walk(full);
+        return entry.name.endsWith(".jsx") ? [full] : [];
+      });
+
+    const offenders = walk(path.join(root, "components"))
+      .filter((file) => !file.endsWith("ChatInput.jsx"))
+      .filter((file) => {
+        const source = fs
+          .readFileSync(file, "utf8")
+          .replace(/\/\*[\s\S]*?\*\//g, "")
+          .replace(/^\s*\/\/.*$/gm, "");
+        return /scrollbarWidth\s*:|scrollbarColor\s*:/.test(source);
+      })
+      .map((file) => path.relative(root, file));
+
+    expect(offenders).toEqual([]);
+  });
+});

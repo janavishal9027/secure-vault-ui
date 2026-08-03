@@ -241,3 +241,148 @@ describe("landing palette works in both modes", () => {
     expect(lum(parse(light["--l-ov"]))).toBeLessThan(lum(parse(dark["--l-ov"])));
   });
 });
+
+describe("security claims match the implementation", () => {
+  // A marketing page is the one place an inaccurate security claim does real
+  // damage — a reader is entitled to take it literally when deciding what to
+  // put in the product.
+  //
+  // These were each checked against the code before being written: BCrypt in
+  // the Authentication service, Fernet in ai-core's crypto module, and the
+  // `findByNoteIdAndOwnerUserId` scoping in the notes repository. The note
+  // body was read straight out of Postgres to confirm it is stored as
+  // readable text.
+  const page = fs.readFileSync(path.resolve(__dirname, "LandingPage.jsx"), "utf8");
+  const modal = fs.readFileSync(
+    path.resolve(__dirname, "landingModalContent.js"),
+    "utf8",
+  );
+
+  /** Strips comments, so a comment explaining a rejected claim is not read as making it. */
+  const prose = (src) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  test("neither surface claims end-to-end encryption", () => {
+    // Note bodies are readable by the server by necessity — summarising and
+    // searching them requires it. Claiming otherwise would be false.
+    //
+    // The distinction that matters is asserting it versus denying it. The
+    // modal legitimately says "Notes are *not* end-to-end encrypted" and
+    // "End-to-end encryption *would rule out* every AI feature" — both explain
+    // its absence and must be allowed to stay. A bare mention is a claim.
+    //
+    // So rather than pattern-matching negation on one side, each occurrence is
+    // checked in context: it has to sit near a cue that marks it as absent.
+    const ABSENCE_CUES = /\b(not|would|cannot|does not|no)\b/i;
+
+    // The hero bullets should not raise the subject at all.
+    expect(prose(page)).not.toMatch(/end-to-end encrypt/i);
+
+    const text = prose(modal).replace(/\s+/g, " ");
+    const mentions = [...text.matchAll(/end-to-end encrypt\w*/gi)];
+    expect(mentions.length).toBeGreaterThan(0); // it must be addressed, not dodged
+
+    for (const m of mentions) {
+      const context = text.slice(Math.max(0, m.index - 60), m.index + m[0].length + 60);
+      expect(context).toMatch(ABSENCE_CUES);
+    }
+
+    for (const src of [prose(page), prose(modal)]) {
+      expect(src).not.toMatch(/zero[- ]knowledge/i);
+    }
+  });
+
+  test("the limits section exists and names the encryption trade-off", () => {
+    // The heading lives in the shell; the content lives in the registry.
+    const shell = fs.readFileSync(
+      path.resolve(__dirname, "LandingModal.jsx"),
+      "utf8",
+    );
+    expect(shell).toContain("What this does not do");
+    // The comment explains it, but the *rendered* copy must say it too.
+    expect(prose(modal)).toMatch(/not end-to-end encrypted/i);
+  });
+
+  test("no absolute guarantees", () => {
+    // "Unhackable", "100% secure" and friends are claims nothing can support.
+    for (const src of [prose(page), prose(modal)]) {
+      expect(src).not.toMatch(/unhackable|100% secure|completely secure|impenetrable/i);
+    }
+  });
+
+  test("the modal names mechanisms the code actually uses", () => {
+    const text = prose(modal);
+    expect(text).toMatch(/BCrypt/);
+    expect(text).toMatch(/Fernet/);
+    expect(text).toMatch(/HMAC-SHA256/);
+    expect(text).toMatch(/TOTP/);
+  });
+
+  test("two-factor is not described as mandatory", () => {
+    // It defaults to false on both signup paths — local and OAuth — so it is
+    // opt-in. The design's card said "Mandatory two-factor authentication",
+    // which would have been the second false claim on the page.
+    const text = prose(page) + prose(modal);
+    expect(text).not.toMatch(/mandatory two-factor/i);
+    expect(text).not.toMatch(/two-factor is (?:required|enforced) on (?:all|every)/i);
+    // And it must say so plainly somewhere.
+    expect(prose(modal)).toMatch(/optional, not mandatory|off by default|switched off/i);
+  });
+
+  test("voice dictation discloses that audio leaves the device", () => {
+    // Chrome's speech API streams audio to Google for transcription. For a
+    // product sold on privacy, omitting that would be a meaningful silence.
+    expect(prose(modal)).toMatch(/not done on your device|streams audio|passed through/i);
+  });
+
+  test("every feature card has a modal entry", () => {
+    // A card that opens an empty dialog is worse than one that does nothing.
+    // Read from the content config rather than the component: the cards are
+    // data now, so that is where a new one would be added.
+    const content = fs.readFileSync(
+      path.resolve(__dirname, "landingContent.js"),
+      "utf8",
+    );
+    const titles = [...content.matchAll(/^\s*title: "([^"]+)",$/gm)].map((m) => m[1]);
+    expect(titles.length).toBeGreaterThanOrEqual(4);
+
+    // Feature cards key straight into FEATURES; posts name theirs via `modal`.
+    const modalKeys = [...modal.matchAll(/^\s*"([^"]+)": \{$/gm)].map((m) => m[1]);
+    const postKeys = [...content.matchAll(/^\s*modal: "([^"]+)",$/gm)].map((m) => m[1]);
+
+    for (const key of postKeys) {
+      expect(modalKeys).toContain(key);
+    }
+    // The four feature cards must each resolve.
+    for (const card of ["2FA Protection", "Voice Commands", "Role-Based Access", "Private & Secure"]) {
+      expect(modalKeys).toContain(card);
+    }
+  });
+
+  test("the nav links only to sections the page renders", () => {
+    // Header and page read the same list, so this asserts the list is honoured
+    // rather than that two hardcoded copies happen to agree.
+    const content = fs.readFileSync(
+      path.resolve(__dirname, "landingContent.js"),
+      "utf8",
+    );
+    const ids = [...content.matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1]);
+    expect(ids).toEqual(["features", "security", "community", "posts"]);
+
+    const carousel = fs.readFileSync(
+      path.resolve(__dirname, "FeedbackCarousel.jsx"),
+      "utf8",
+    );
+    const rendered = page + carousel;
+    for (const id of ids) {
+      expect(rendered).toContain(`id="${id}"`);
+    }
+  });
+
+  test("each modal entry names its limits", () => {
+    // The limits block is what makes the claims above worth reading, so no
+    // entry is allowed to ship without one.
+    const entries = [...modal.matchAll(/limits:\s*\[/g)];
+    expect(entries.length).toBeGreaterThanOrEqual(5); // security + 4 cards
+  });
+});

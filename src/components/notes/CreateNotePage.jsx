@@ -39,11 +39,12 @@ import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
+import VpnKeyRoundedIcon from "@mui/icons-material/VpnKeyRounded";
 import MicNoneRoundedIcon from "@mui/icons-material/MicNoneRounded";
 import StopCircleRoundedIcon from "@mui/icons-material/StopCircleRounded";
 
 import AiInsightsPanel from "../ai/AiInsightsPanel";
-import { KEYS_ROUTE } from "../utils/aiErrors";
+import { KEYS_ROUTE, describeSummaryFailure } from "../utils/aiErrors";
 
 import {
   createNote,
@@ -161,6 +162,10 @@ const CreateNotePage = () => {
   // prompt, device opening) before the microphone is actually live. The button
   // says "Starting" until this flips, so nobody talks into a closed mic.
   const [isListening, setIsListening] = useState(false);
+  // What is being heard right now, before it is confirmed. Shown live so the
+  // user can see the microphone is working; never written to the document,
+  // because interim text is rewritten on every syllable.
+  const [interimText, setInterimText] = useState("");
   const [mobileNotesOpen, setMobileNotesOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const [noteMenuAnchor, setNoteMenuAnchor] = useState(null);
@@ -169,6 +174,10 @@ const CreateNotePage = () => {
 
   const pollTimerRef = useRef(null);
   const recognitionRef = useRef(null);
+  // The Quill instance. Dictation is committed through its API rather than by
+  // setting React state, because `content` is also Quill's `value` — see the
+  // note on onresult below.
+  const quillRef = useRef(null);
   const interimTranscriptRef = useRef("");
   const baseContentRef = useRef("");
   const silenceTimerRef = useRef(null);
@@ -213,6 +222,20 @@ const CreateNotePage = () => {
 
   const summary = selectedNote?.summary || "";
   const summaryStatus = selectedNote?.summaryStatus || "NONE";
+
+  // Two ways a summary can fail, and the user should not have to care which.
+  //
+  //   * `summaryError` (local state) — the request itself was rejected, e.g.
+  //     the note is too short. Known immediately.
+  //   * `selectedNote.summaryError` — generation failed later, over Kafka, so
+  //     there was no response to carry the reason. Persisted on the note.
+  //
+  // The local one wins when both are set: it describes the attempt the user
+  // just made, rather than a previous one.
+  const summaryFailure = useMemo(
+    () => describeSummaryFailure(summaryError || selectedNote?.summaryError),
+    [summaryError, selectedNote],
+  );
 
   useEffect(() => {
     dispatch(getAllNotes());
@@ -605,12 +628,36 @@ const CreateNotePage = () => {
         armSilenceTimer();
       }
 
+      // Committed words go into the document through Quill's own API.
+      //
+      // They used to be written with `setContent(base + interim)`, which does
+      // not work here: `content` is ReactQuill's `value`, and Quill answers
+      // every change by emitting normalised HTML back through `onChange` ->
+      // `setContent`. So each result overwrote Quill's value with a plain
+      // string and Quill immediately overwrote it back — the two fought, and
+      // dictated text was mangled or lost outright.
+      //
+      // Inserting at the end via the editor keeps one writer for the document.
       if (finalChunk) {
-        baseContentRef.current = `${baseContentRef.current}${finalChunk} `;
+        const editor = quillRef.current?.getEditor?.();
+        if (editor) {
+          // getLength() counts Quill's trailing newline, so subtract it to
+          // land before the final break rather than after it.
+          const at = Math.max(0, editor.getLength() - 1);
+          const needsSpace = at > 0 && !/\s$/.test(editor.getText(Math.max(0, at - 1), 1));
+          editor.insertText(at, `${needsSpace ? " " : ""}${finalChunk.trim()}`, "user");
+        } else {
+          // No editor mounted yet (dictation started before the note opened).
+          baseContentRef.current = `${baseContentRef.current}${finalChunk} `;
+          setContent(baseContentRef.current);
+        }
       }
-      interimTranscriptRef.current = interimChunk;
 
-      setContent(`${baseContentRef.current}${interimChunk}`);
+      // Interim text is provisional — the browser rewrites it as it refines its
+      // guess — so it is shown beside the microphone rather than typed into
+      // the note and repeatedly corrected.
+      interimTranscriptRef.current = interimChunk;
+      setInterimText(interimChunk);
       setIsEditMode(true);
     };
 
@@ -671,19 +718,30 @@ const CreateNotePage = () => {
       // not expired, that end is the browser's housekeeping rather than the
       // user's intent — so pick the session straight back up.
       if (!userStoppedRef.current && recognitionRef.current) {
-        try {
-          recognition.start();
-          return;
-        } catch (_) {
-          // Fall through and close down properly.
-        }
+        // Deferred by a tick. Calling start() synchronously inside onend
+        // throws InvalidStateError in Chrome — the object has not finished
+        // resetting — which silently ended the session instead of continuing
+        // it.
+        setTimeout(() => {
+          if (userStoppedRef.current || !recognitionRef.current) return;
+          try {
+            recognition.start();
+          } catch (_) {
+            clearSilenceTimer();
+            recognitionRef.current = null;
+            setIsRecording(false);
+            setIsListening(false);
+            setInterimText("");
+          }
+        }, 0);
+        return;
       }
 
       clearSilenceTimer();
-      setContent(baseContentRef.current.trimEnd());
       recognitionRef.current = null;
       setIsRecording(false);
       setIsListening(false);
+      setInterimText("");
     };
 
     try {
@@ -1159,37 +1217,58 @@ const CreateNotePage = () => {
         >
           <Paper
             sx={{
-              // No lit edge: this panel scrolls, and an absolutely-positioned
-              // highlight would slide away with the content.
+              // No lit edge: the contents scroll, and an absolutely-positioned
+              // highlight would slide away with them.
               ...glassCard({ highlight: false }),
               width: "100%",
               color: "var(--text)",
-              p: 2,
               height: "100%",
               boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
-
-              overflowY: "auto",
-              overflowX: "hidden",
-              scrollBehavior: "smooth",
-              msOverflowStyle: "none",
-
-              backgroundClip: "padding-box",
-              clipPath: "inset(0 round 24px)",
-
-              "&::-webkit-scrollbar": { width: "8px" },
-              "&::-webkit-scrollbar-track": { background: "transparent" },
-              "&::-webkit-scrollbar-thumb": {
-                background: "rgba(var(--ov),0.3)",
-                borderRadius: "999px",
-              },
-              "&::-webkit-scrollbar-thumb:hover": {
-                background: "rgba(var(--ov),0.5)",
-              },
+              // This card clips; the box inside it scrolls.
+              //
+              // `border-radius` does not clip a scrollbar — Chrome paints the
+              // bar in a gutter outside the rounded clip that applies to
+              // content, so a scrolling element with rounded corners shows the
+              // bar's ends past the curve. `overflow: hidden` on the parent is
+              // what rounds them off, because the child's gutter is then inside
+              // something being clipped.
+              //
+              // `p: 0` matters as much as the clip: with padding here the inner
+              // scroller — and its bar — would sit away from the card edge and
+              // read as a separate object floating in the panel rather than as
+              // the panel's own scrollbar.
+              overflow: "hidden",
+              p: 0,
             }}
           >
-            {notesPanelContent}
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                overflowX: "hidden",
+                scrollBehavior: "smooth",
+                // Content inset only. The scroller itself still spans the full
+                // card, so the bar stays on the edge where it belongs.
+                p: 2,
+                pr: 1.25,
+                // Reserve the bar's track whether or not it is currently
+                // needed.
+                //
+                // This panel is resizable. Widen it and the note previews wrap
+                // onto fewer lines, the list gets shorter, and at some width it
+                // stops overflowing — so the scrollbar disappears and every
+                // card jumps 10px wider. Narrow it again and they jump back.
+                // Reserving the gutter keeps the cards a fixed width through
+                // the whole drag, and keeps the panel looking the same either
+                // side of that threshold.
+                scrollbarGutter: "stable",
+              }}
+            >
+              {notesPanelContent}
+            </Box>
           </Paper>
 
           {/* Resize handle */}
@@ -1247,10 +1326,13 @@ const CreateNotePage = () => {
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
+            // `overflow: hidden` already clips to this card's own border
+            // radius. The `clipPath: inset(0 round 24px)` that used to sit here
+            // hardcoded a radius that no longer matched — `borderRadius: 3`
+            // resolves through MUI's 10px shape unit to 30px — so it cut 6px
+            // inside the border it was following.
             overflow: "hidden",
-
             backgroundClip: "padding-box",
-            clipPath: "inset(0 round 24px)",
           }}
         >
           {/* Fixed title header — stays put while the content below scrolls */}
@@ -1290,22 +1372,12 @@ const CreateNotePage = () => {
               scrollBehavior: "smooth",
               px: { xs: 1.5, sm: 2, md: 3 },
               pb: { xs: 2, md: 4 },
-
-              msOverflowStyle: "none",
-              "&::-webkit-scrollbar": { width: "8px" },
-              "&::-webkit-scrollbar-track": { background: "transparent" },
-              "&::-webkit-scrollbar-thumb": {
-                background: "rgba(var(--ov),0.3)",
-                borderRadius: "999px",
-              },
-              "&::-webkit-scrollbar-thumb:hover": {
-                background: "rgba(var(--ov),0.5)",
-              },
             }}
           >
             <Box sx={{ width: "100%", overflowWrap: "break-word", wordBreak: "break-word" }}>
               {isEditMode ? (
                 <ReactQuill
+                  ref={quillRef}
                   theme="snow"
                   value={content}
                   onChange={setContent}
@@ -1513,16 +1585,46 @@ const CreateNotePage = () => {
                   </Typography>
                 )}
 
-                {summaryError && (
-                  <Typography
+                {/* Why it failed, and — when the cause is an account with no
+                    provider key — the one action that fixes it.
+
+                    The reason used to be discarded between the Kafka consumer
+                    and the note, so every failure read as an unexplained
+                    "Failed" chip. The commonest cause by far is a missing key,
+                    which takes a minute to fix once somebody says so. */}
+                {summaryFailure && (
+                  <Box
                     sx={{
                       mt: 1.5,
-                      fontSize: "0.85rem",
-                      color: "rgba(255,138,128,0.95)",
+                      p: 1.5,
+                      borderRadius: 2,
+                      background: "rgba(var(--ov),0.04)",
+                      border: "1px solid rgba(var(--ov),0.10)",
                     }}
                   >
-                    {summaryError}
-                  </Typography>
+                    <Typography
+                      sx={{ fontSize: "0.85rem", color: "var(--danger)" }}
+                    >
+                      {summaryFailure.message}
+                    </Typography>
+                    {summaryFailure.needsKey && (
+                      <Button
+                        size="small"
+                        startIcon={<VpnKeyRoundedIcon />}
+                        onClick={() => navigate(KEYS_ROUTE)}
+                        sx={{
+                          mt: 1,
+                          borderRadius: "999px",
+                          textTransform: "none",
+                          color: "var(--text)",
+                          border: "1px solid rgba(var(--ov),0.18)",
+                          px: 2,
+                        }}
+                      >
+                        Add your API key
+                      </Button>
+                    )}
+                  </Box>
                 )}
               </Paper>
             </Box>
@@ -1647,6 +1749,45 @@ const CreateNotePage = () => {
             </DialogContent>
           </Dialog>
         </Paper>
+
+          {/* What the microphone is hearing, before it is committed.
+              Previously there was no signal at all between pressing the button
+              and text appearing, so a session that was capturing nothing looked
+              identical to one that was working. */}
+          {isRecording && (
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 92,
+                right: 24,
+                zIndex: 3,
+                maxWidth: 320,
+                px: 2,
+                py: 1.25,
+                borderRadius: 2,
+                background: "var(--surface-2)",
+                border: "1px solid rgba(var(--ov),0.12)",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                  color: isListening ? "var(--success)" : "var(--text-muted)",
+                  mb: interimText ? 0.5 : 0,
+                }}
+              >
+                {isListening ? "Listening" : "Starting microphone…"}
+              </Typography>
+              {interimText && (
+                <Typography sx={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5 }}>
+                  {interimText}
+                </Typography>
+              )}
+            </Box>
+          )}
 
           <Tooltip
             title={

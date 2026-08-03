@@ -117,6 +117,79 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ===== Scrollbars, once, for the whole app =====
+ *
+ * This was previously declared in six places — the notes sidebar, the note
+ * editor, three areas of the chat page and the dashboard grid — each a slightly
+ * different copy of the same idea. They had drifted, and every one of them was
+ * missing the same thing.
+ *
+ * The missing thing: `::-webkit-scrollbar-button`. Chrome draws stepper arrows
+ * at both ends of a scrollbar the moment you style `::-webkit-scrollbar` at
+ * all, and it keeps drawing them until you say otherwise. None of the six did,
+ * which is where the arrows came from.
+ *
+ * The second problem was position. A thumb painted straight into a 8px track
+ * sits flush against the panel's edge and rides over its rounded corner, so it
+ * reads as escaping the card. The transparent border plus `background-clip:
+ * content-box` insets it, leaving the bar floating inside the padding rather
+ * than sitting on the boundary.
+ *
+ * Both syntaxes are here because neither covers every browser: `scrollbar-width`
+ * and `scrollbar-color` are the standard (Firefox), `::-webkit-scrollbar` is
+ * what Chrome, Edge and Safari actually implement.
+ */
+/* Firefox only — and this scoping is load-bearing.
+ *
+ * `scrollbar-width` / `scrollbar-color` are not a fallback that sits politely
+ * beside `::-webkit-scrollbar`. From Chrome 121 the standard properties take
+ * precedence, and setting either one makes Chrome **ignore the webkit
+ * pseudo-elements entirely** — so a global `* { scrollbar-width: thin }` turns
+ * everything below into dead CSS and hands you the browser's native scrollbar,
+ * arrows and all. That is precisely what was happening: the button rule was
+ * correct and was never being applied.
+ *
+ * `@supports not selector(::-webkit-scrollbar)` is true only where the webkit
+ * pseudo-elements do not exist, which is Firefox. Chrome, Edge and Safari fall
+ * through to the rules below.
+ */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--ov), 0.22) transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+/* The arrows. `display: none` alone is not reliable across Chrome versions —
+   zero width and height are what actually remove the space they occupy. */
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--ov), 0.2);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--ov), 0.34);
+  background-clip: content-box;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

@@ -8,6 +8,7 @@ import {
   describeAiError,
   describeAiStreamError,
   describeAiFetchError,
+  describeSummaryFailure,
 } from "./aiErrors";
 
 const axiosError = (status, data) => ({ response: { status, data } });
@@ -97,5 +98,69 @@ describe("describeAiFetchError", () => {
     };
     const described = await describeAiFetchError(response, "Chat failed.");
     expect(described.message).toContain("502");
+  });
+});
+
+describe("describeSummaryFailure", () => {
+  // Summarisation runs over Kafka, so its failure never reaches the browser as
+  // an HTTP error — it arrives as a string the notes service recorded on the
+  // note. That string is produced by a different service, so its shape is a
+  // contract worth pinning: `<status> <STATUS_NAME> - <json body>`.
+  const NO_KEY_424 =
+    '424 FAILED_DEPENDENCY - {"detail":"No Groq API key configured for this account."}';
+
+  test("nothing to report when there was no failure", () => {
+    expect(describeSummaryFailure(null)).toBeNull();
+    expect(describeSummaryFailure("")).toBeNull();
+    expect(describeSummaryFailure("   ")).toBeNull();
+  });
+
+  test("a 424 is recognised as a missing key", () => {
+    const result = describeSummaryFailure(NO_KEY_424);
+    expect(result.needsKey).toBe(true);
+  });
+
+  test("the missing-key message is written for a person, not a log", () => {
+    const result = describeSummaryFailure(NO_KEY_424);
+    // No status code, no JSON envelope, no provider name the user did not choose.
+    expect(result.message).not.toMatch(/424|FAILED_DEPENDENCY|\{|detail/);
+    expect(result.message).toMatch(/key/i);
+  });
+
+  test("the message alone is enough, without the status", () => {
+    // If the notes service ever stops prefixing the status, this must still
+    // classify — hence matching on both signals rather than one.
+    const result = describeSummaryFailure(
+      "No Groq API key configured for this account.",
+    );
+    expect(result.needsKey).toBe(true);
+  });
+
+  test("the status alone is enough, without the message", () => {
+    const result = describeSummaryFailure("424 FAILED_DEPENDENCY");
+    expect(result.needsKey).toBe(true);
+  });
+
+  test("other failures are reported but not treated as a missing key", () => {
+    const result = describeSummaryFailure(
+      '502 BAD_GATEWAY - {"detail":"summarization failed"}',
+    );
+    expect(result.needsKey).toBe(false);
+    // The sentence is extracted from the envelope rather than shown raw.
+    expect(result.message).toBe("summarization failed");
+    expect(result.message).not.toMatch(/502|BAD_GATEWAY/);
+  });
+
+  test("a bare string survives intact", () => {
+    // Not every failure comes from ai-core — a connection refused, say.
+    const result = describeSummaryFailure("Connection refused");
+    expect(result.needsKey).toBe(false);
+    expect(result.message).toBe("Connection refused");
+  });
+
+  test("a malformed body does not throw", () => {
+    const result = describeSummaryFailure('502 BAD_GATEWAY - {not json');
+    expect(result).not.toBeNull();
+    expect(typeof result.message).toBe("string");
   });
 });

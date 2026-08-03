@@ -643,16 +643,6 @@ const AiChatPage = () => {
           overflowY: "auto",
           px: 1,
           pb: 1,
-          // Match the notes panel scrollbar style
-          "&::-webkit-scrollbar": { width: "8px" },
-          "&::-webkit-scrollbar-track": { background: "transparent" },
-          "&::-webkit-scrollbar-thumb": {
-            background: "rgba(var(--ov),0.3)",
-            borderRadius: "999px",
-          },
-          "&::-webkit-scrollbar-thumb:hover": {
-            background: "rgba(var(--ov),0.5)",
-          },
         }}
       >
         {convsLoading &&
@@ -861,6 +851,23 @@ const AiChatPage = () => {
           />
         </Box>
 
+        {/* Clipping wrapper. `border-radius` does not clip a scrollbar —
+            Chrome paints it in a gutter outside the content's rounded clip —
+            so a scrolling card with rounded corners shows the bar's ends past
+            the curve. The parent's `overflow: hidden` is what rounds them off.
+            The scroll, and the ref that drives scroll-to-bottom, stay on the
+            element below. */}
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            borderRadius: 3,
+            overflow: "hidden",
+            background: "var(--surface-2)",
+            border: "1px solid rgba(var(--ov),0.06)",
+          }}
+        >
         <Paper
           ref={scrollRef}
           sx={{
@@ -868,22 +875,11 @@ const AiChatPage = () => {
             minHeight: 0,
             overflowY: "auto",
             p: 2.5,
-            borderRadius: 3,
-            background: "var(--surface-2)",
-            border: "1px solid rgba(var(--ov),0.06)",
+            borderRadius: 0,
+            background: "transparent",
+            border: "none",
             boxShadow: "none",
             color: "var(--text)",
-            scrollbarWidth: "thin",
-            scrollbarColor: "rgba(var(--ov),0.18) transparent",
-            "&::-webkit-scrollbar": { width: "8px" },
-            "&::-webkit-scrollbar-track": { background: "transparent" },
-            "&::-webkit-scrollbar-thumb": {
-              background: "rgba(var(--ov),0.18)",
-              borderRadius: "999px",
-            },
-            "&::-webkit-scrollbar-thumb:hover": {
-              background: "rgba(var(--ov),0.3)",
-            },
           }}
         >
           {historyLoading && (
@@ -1045,6 +1041,7 @@ const AiChatPage = () => {
               )}
           </Stack>
         </Paper>
+        </Box>
 
         {error && (
           <Box sx={{ mt: 1.5 }}>
@@ -1414,17 +1411,6 @@ const MarkdownContent = ({ text }) => (
       wordBreak: "break-word",
       // Thin, transparent scrollbars for code blocks / tables that overflow
       "& *": {
-        scrollbarWidth: "thin",
-        scrollbarColor: "rgba(var(--ov),0.18) transparent",
-      },
-      "& *::-webkit-scrollbar": { width: "8px", height: "8px" },
-      "& *::-webkit-scrollbar-track": { background: "transparent" },
-      "& *::-webkit-scrollbar-thumb": {
-        background: "rgba(var(--ov),0.18)",
-        borderRadius: "999px",
-      },
-      "& *::-webkit-scrollbar-thumb:hover": {
-        background: "rgba(var(--ov),0.3)",
       },
       "& > *:first-of-type": { mt: 0 },
       "& > *:last-child": { mb: 0 },

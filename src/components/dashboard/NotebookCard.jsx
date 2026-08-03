@@ -216,14 +216,6 @@ export default function NotebookCard({ viewMode, notes, loading }) {
     overflowY: "auto",
     pr: 1,
     pt: 1.5,
-    "&::-webkit-scrollbar": { width: 8 },
-    "&::-webkit-scrollbar-thumb": {
-      backgroundColor: "rgba(var(--ov),0.10)",
-      borderRadius: 8,
-    },
-    "&::-webkit-scrollbar-thumb:hover": {
-      backgroundColor: "rgba(var(--ov),0.18)",
-    },
   };
 
   const paginationSx = {

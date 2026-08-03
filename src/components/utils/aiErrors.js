@@ -73,6 +73,50 @@ export const describeAiStreamError = (
 };
 
 /**
+ * Classify a summary failure that arrived asynchronously.
+ *
+ * Summarisation runs over Kafka, so by the time it fails the request that
+ * triggered it is long finished — there is no axios error and no status code
+ * to inspect. What comes back instead is the string the notes service recorded
+ * on the note, which looks like:
+ *
+ *     424 FAILED_DEPENDENCY - {"detail":"No Groq API key configured ..."}
+ *
+ * So the classification has to be done on text. Both signatures are checked:
+ * the status the notes consumer prefixes, and the message ai-core's
+ * NoProviderKeyError raises — either alone is enough, and matching both means
+ * a change to one does not silently drop the case.
+ */
+export const describeSummaryFailure = (reason) => {
+  const text = (reason || "").trim();
+  if (!text) return null;
+
+  const needsKey = /\b424\b/.test(text) || NO_KEY_SIGNATURE.test(text);
+
+  return {
+    needsKey,
+    // The raw string carries a status code and a JSON envelope, which is the
+    // right thing in a log and the wrong thing in an interface.
+    message: needsKey
+      ? "Summaries run on your own AI provider key, and this account does not have one yet."
+      : cleanDetail(text) || "The summary could not be generated.",
+  };
+};
+
+/** Pulls the human sentence out of `424 STATUS - {"detail":"..."}`. */
+const cleanDetail = (text) => {
+  const jsonStart = text.indexOf("{");
+  if (jsonStart !== -1) {
+    try {
+      return detailOf(JSON.parse(text.slice(jsonStart)));
+    } catch {
+      // Not JSON after all — fall through to the raw text.
+    }
+  }
+  return text.replace(/^\d{3}\s+[A-Z_]+\s*-\s*/, "");
+};
+
+/**
  * Same, for the streaming chat path — it uses fetch (axios buffers), so the
  * error body has to be read off the Response before it can be classified.
  * This covers failures *before* the stream opens, which do carry a status.
